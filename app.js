@@ -137,7 +137,7 @@ app.post('/login', (req, res) => {
             req.session.user = results[0]; 
             req.flash('success', 'Login successful!');
             if(req.session.user.role == 'user')
-                res.redirect('/shopping');
+                res.redirect('/book');
             else
                 res.redirect('/inventory');
         } else {
