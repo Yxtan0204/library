@@ -5,6 +5,9 @@ const flash = require('connect-flash');
 const multer = require('multer');
 const app = express();
 
+const finesRoutes = require('./fines/finesRoutes');
+
+
 // Set up multer for file uploads
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -145,6 +148,8 @@ app.get('/logout', (req, res) => {
     req.session.destroy();
     res.redirect('/');
 });
+
+app.use('/fines', finesRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
