@@ -132,7 +132,7 @@ app.post('/login', (req, res) => {
             if (req.session.user.role === 'user') {
                 res.redirect('/book');
             } else {
-                res.redirect('/inventory');
+                res.redirect('/library');
             }
         } else {
             req.flash('error', 'Invalid email or password.');
