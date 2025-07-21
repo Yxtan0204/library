@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>User Monthly Fines</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: left;
+    }
+    th {
+      background-color: #f4f4f4;
+    }
+    h1 {
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <h1>User Monthly Fines</h1>
+  <table>
+    <tr>
+      <th>User</th>
+      <th>Return Month</th>
+      <th>Total Fine ($)</th>
+    </tr>
+    <% fines.forEach(f => { %>
+      <tr>
+        <td><%= f.user_name %></td>
+        <td><%= f.return_month %></td>
+        <td><%= Number(f.total_fine).toFixed(2) %></td>
+      </tr>
+    <% }) %>
+  </table>
+</body>
+</html>
