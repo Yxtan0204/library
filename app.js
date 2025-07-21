@@ -18,11 +18,11 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 const connection = mysql.createConnection({
-    host: 'localhost',
-    // port: 3307,
-    user: 'root',
-    password: 'Republic_C207',
-    database: 'library'
+    host: 'ozitwa.h.filess.io',
+    port: 3307,
+    user: 'CA2library_fallennor',
+    password: '377ad025e1933d3d05d3ee6580696b0f225b1daf',
+    database: 'CA2library_fallennor'
   });
 
 connection.connect((err) => {
@@ -154,4 +154,7 @@ app.get('/logout', (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => {
+  console.log(` Library App server is running at: http://localhost:${PORT}`);
+});
+
