@@ -149,6 +149,84 @@ app.get('/logout', (req, res) => {
     res.redirect('/');
 });
 
+app.get('/library', checkAuthenticated, (req, res) => {
+    pool.query('SELECT * FROM books', (error, results) => {
+        if (error) throw error;
+        res.render('library', { books: results, user: req.session.user });
+    });
+});
+
+app.get('/addBook', checkAuthenticated, checkAdmin, (req, res) => {
+    res.render('addBook', { user: req.session.user });
+});
+
+app.post('/addBook', upload.single('coverImage'), (req, res) => {
+    const { title, author, genre, quantity } = req.body;
+    let coverImage = req.file ? req.file.filename : null;
+
+    const sql = 'INSERT INTO books (title, author, genre, quantity, coverImage) VALUES (?, ?, ?, ?, ?)';
+    pool.query(sql, [title, author, genre, quantity, coverImage], (error, results) => {
+        if (error) {
+            console.error("Error adding book:", error);
+            res.status(500).send('Error adding book');
+        } else {
+            res.redirect('/library');
+        }
+    });
+});
+app.get('/updateBook/:id', checkAuthenticated, checkAdmin, (req, res) => {
+    const bookId = req.params.id;
+    pool.query('SELECT * FROM books WHERE bookId = ?', [bookId], (error, results) => {
+        if (error) throw error;
+        if (results.length > 0) {
+            res.render('updateBook', { book: results[0] });
+        } else {
+            res.status(404).send('Book not found');
+        }
+    });
+});
+
+app.post('/updateBook/:id', upload.single('coverImage'), (req, res) => {
+    const bookId = req.params.id;
+    const { title, author, genre } = req.body;
+    let coverImage = req.body.currentImage;
+    if (req.file) coverImage = req.file.filename;
+    const sql = 'UPDATE books SET title = ?, author = ?, genre = ?, coverImage = ? WHERE bookId = ?';
+    pool.query(sql, [title, author, genre, coverImage, bookId], (error, results) => {
+        if (error) {
+            console.error("Error updating book:", error);
+            res.status(500).send('Error updating book');
+        } else {
+            res.redirect('/library');
+        }
+    });
+});
+app.get('/book/:id', checkAuthenticated, (req, res) => {
+    const bookId = req.params.id;
+    connection.query('SELECT * FROM books WHERE bookId = ?', [bookId], (error, results) => {
+        if (error) throw error;
+        if (results.length > 0) {
+            res.render('book', { book: results[0], user: req.session.user });
+        } else {
+            res.status(404).send('Book not found');
+        }
+    });
+});
+app.post('/addBook', upload.single('coverImage'), (req, res) => {
+    const { title, author, genre, quantity } = req.body;
+    let coverImage = req.file ? req.file.filename : null;
+
+    const sql = 'INSERT INTO books (title, author, genre, quantity, coverImage) VALUES (?, ?, ?, ?, ?)';
+    pool.query(sql, [title, author, genre, quantity, coverImage], (error, results) => {
+        if (error) {
+            console.error("Error adding book:", error);
+            res.status(500).send('Error adding book');
+        } else {
+            res.redirect('/library');
+        }
+    });
+});
+
 app.use('/fines', finesRoutes);
 
 const PORT = process.env.PORT || 3000;
