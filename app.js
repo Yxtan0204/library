@@ -77,9 +77,13 @@ const validateRegistration = (req, res, next) => {
 
 // ROUTES
 app.get('/', (req, res) => {
-    res.render('index', {
-        user: req.session.user,
-        messages: req.flash('success')
+    pool.query('SELECT * FROM publishers', (error, results) => {
+        if (error) {
+            console.error("Error fetching publishers:", error);
+            res.render('index', { messages: [], user: req.session.user, publishers: [] });
+        } else {
+            res.render('index', { messages: [], user: req.session.user, publishers: results });
+        }
     });
 });
 
