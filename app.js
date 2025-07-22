@@ -203,7 +203,7 @@ app.post('/updateBook/:id', upload.single('coverImage'), (req, res) => {
 });
 app.get('/book/:id', checkAuthenticated, (req, res) => {
     const bookId = req.params.id;
-    connection.query('SELECT * FROM books WHERE bookId = ?', [bookId], (error, results) => {
+    pool.query('SELECT * FROM books WHERE bookId = ?', [bookId], (error, results) => {
         if (error) throw error;
         if (results.length > 0) {
             res.render('book', { book: results[0], user: req.session.user });
