@@ -36,7 +36,7 @@
       <div class="col-md-7">
         <div class="card p-4">
           <h2 class="mb-4 text-center">Update Book</h2>
-          <form action="/books/<%= book._id %>?_method=PUT" method="POST" enctype="multipart/form-data">
+          <form action="/updateBook/<%= book.bookId %>" method="POST" enctype="multipart/form-data">
             <div class="mb-3">
               <label for="title" class="form-label">Title</label>
               <input type="text" class="form-control" id="title" name="title" value="<%= book.title %>" required>
@@ -59,6 +59,7 @@
                 Current: <%= book.coverImage %>
               </div>
             </div>
+            <img src="/images/<%= book.coverImage %>" width="20%" onerror="this.src='/images/default.png'">
             <button type="submit" class="btn btn-success">Update Book</button>
             <a href="/books/<%= book._id %>" class="btn btn-secondary ms-2">Cancel</a>
           </form>

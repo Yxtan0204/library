@@ -227,6 +227,30 @@ app.post('/addBook', upload.single('coverImage'), (req, res) => {
     });
 });
 
+app.get('/deleteBook/:id', checkAuthenticated, checkAdmin, (req, res) => {
+    const bookId = req.params.id;
+
+    pool.query('DELETE FROM books WHERE bookId = ?', [bookId], (error, results) => {
+        if (error) {
+            console.error("Error deleting book:", error);
+            res.status(500).send('Error deleting book');
+        } else {
+            res.redirect('/library');
+        }
+    });
+});
+app.post('/deleteBook/:id', checkAuthenticated, checkAdmin, (req, res) => {
+    const bookId = req.params.id;
+
+    pool.query('DELETE FROM books WHERE bookId = ?', [bookId], (error, results) => {
+        if (error) {
+            console.error("Error deleting book:", error);
+            res.status(500).send('Error deleting book');
+        } else {
+            res.redirect('/library');
+        }
+    });
+});
 app.use('/fines', finesRoutes);
 
 const PORT = process.env.PORT || 3000;
