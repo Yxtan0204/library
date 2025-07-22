@@ -1,0 +1,21 @@
+<%- include('../layout') %>
+<h2>Borrow Book</h2>
+<form method="POST" action="/library/loans/new">
+  <div class="mb-2">
+    <label>Book</label>
+    <select name="availability_id" class="form-control">
+      <% books.forEach(b => { %>
+        <option value="<%= b.id %>"><%= b.title %> - <%= b.publisher %></option>
+      <% }) %>
+    </select>
+  </div>
+  <div class="mb-2">
+    <label>Loan Date</label>
+    <input type="date" name="loan_date" class="form-control" required>
+  </div>
+  <div class="mb-2">
+    <label>Due Date</label>
+    <input type="date" name="due_date" class="form-control" required>
+  </div>
+  <button class="btn btn-primary">Borrow</button>
+</form>

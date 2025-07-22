@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>User Monthly Fines</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark px-4">
+        <a class="navbar-brand" href="/">Library System</a>
+        <div class="collapse navbar-collapse">
+            <ul class="navbar-nav ms-auto">
+                <% if (user) { %>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Welcome, <%= user.username %></a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/logout">Logout</a>
+                    </li>
+                <% } else { %>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/login">Login</a>
+                    </li>
+                <% } %>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container mt-5">
+        <h2 class="mb-4">User Monthly Fines</h2>
+
+        <% if (messages && messages.length > 0) { %>
+            <div class="alert alert-success">
+                <%= messages %>
+            </div>
+        <% } %>
+
+        <% if (fines.length === 0) { %>
+            <div class="alert alert-info">No fines to display.</div>
+        <% } else { %>
+            <div class="table-responsive">
+                <table class="table table-striped table-bordered">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>User</th>
+                            <th>Month</th>
+                            <th>Total Fine ($)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% fines.forEach(fine => { %>
+                            <tr>
+                                <td><%= fine.user_name %></td>
+                                <td><%= fine.return_month %></td>
+                                <td>$<%= fine.total_fine.toFixed(2) %></td>
+                            </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            </div>
+        <% } %>
+    </div>
+
+</body>
+</html>
