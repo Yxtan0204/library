@@ -76,15 +76,16 @@ const validateRegistration = (req, res, next) => {
 };
 
 // ROUTES
+//USER LOG IN OR REGISTRATION
 app.get('/', (req, res) => {
-    res.render('users table/home', {
+    res.render('home', {
         user: req.session.user,
         messages: req.flash('success')
     });
 });
 
 app.get('/register', (req, res) => {
-    res.render('users table/register', {
+    res.render('register', {
         messages: req.flash('error'),
         formData: req.flash('formData')[0]
     });
@@ -98,7 +99,7 @@ app.post('/register', validateRegistration, (req, res) => {
         if (err) {
             console.error('Registration error:', err);
             req.flash('error', 'Database error');
-            return res.redirect('/register');
+            return res.redirect('register');
         }
 
         req.flash('success', 'Registration successful! Please log in.');
@@ -107,7 +108,7 @@ app.post('/register', validateRegistration, (req, res) => {
 });
 
 app.get('/login', (req, res) => {
-    res.render('users table/login', {
+    res.render('login', {
         messages: req.flash('success'),
         errors: req.flash('error')
     });
@@ -126,16 +127,16 @@ app.post('/login', (req, res) => {
         if (err) {
             console.error('Login error:', err);
             req.flash('error', 'Database error');
-            return res.redirect('/login');
+            return res.redirect('login');
         }
 
         if (results.length > 0) {
             req.session.user = results[0];
             req.flash('success', 'Login successful!');
             if (req.session.user.role === 'user') {
-                res.redirect('/book');
+                res.redirect('library');
             } else {
-                res.redirect('/library');
+                res.redirect('publisher');
             }
         } else {
             req.flash('error', 'Invalid email or password.');
@@ -145,15 +146,266 @@ app.post('/login', (req, res) => {
 });
 
 app.get('/logout', (req, res) => {
-    req.session.destroy();
-    res.redirect('/');
+    req.flash('success', 'You have been logged out.');
+    req.session.destroy((err) => {
+        if (err) {
+            console.error('Logout error:', err);
+            return res.redirect('/');
+        }
+        res.redirect('/');
+    });
 });
 
+app.get('/library', checkAuthenticated, (req, res) => {
+    pool.query('SELECT * FROM books', (error, results) => {
+        if (error) throw error;
+        res.render('library', { books: results, user: req.session.user });
+    });
+});
+
+app.get('/addBook', checkAuthenticated, checkAdmin, (req, res) => {
+    res.render('addBook', { user: req.session.user });
+});
+
+app.post('/addBook', upload.single('coverImage'), (req, res) => {
+    const { title, author, genre, quantity } = req.body;
+    let coverImage = req.file ? req.file.filename : null;
+
+    const sql = 'INSERT INTO books (title, author, genre, quantity, coverImage) VALUES (?, ?, ?, ?, ?)';
+    pool.query(sql, [title, author, genre, quantity, coverImage], (error, results) => {
+        if (error) {
+            console.error("Error adding book:", error);
+            res.status(500).send('Error adding book');
+        } else {
+            res.redirect('/library');
+        }
+    });
+});
+app.get('/updateBook/:id', checkAuthenticated, checkAdmin, (req, res) => {
+    const bookId = req.params.id;
+    pool.query('SELECT * FROM books WHERE bookId = ?', [bookId], (error, results) => {
+        if (error) throw error;
+        if (results.length > 0) {
+            res.render('updateBook', { book: results[0] });
+        } else {
+            res.status(404).send('Book not found');
+        }
+    });
+});
+
+app.post('/updateBook/:id', upload.single('coverImage'), (req, res) => {
+    const bookId = req.params.id;
+    const { title, author, genre } = req.body;
+    let coverImage = req.body.currentImage;
+    if (req.file) coverImage = req.file.filename;
+    const sql = 'UPDATE books SET title = ?, author = ?, genre = ?, coverImage = ? WHERE bookId = ?';
+    pool.query(sql, [title, author, genre, coverImage, bookId], (error, results) => {
+        if (error) {
+            console.error("Error updating book:", error);
+            res.status(500).send('Error updating book');
+        } else {
+            res.redirect('/library');
+        }
+    });
+});
+app.get('/book/:id', checkAuthenticated, (req, res) => {
+    const bookId = req.params.id;
+    pool.query('SELECT * FROM books WHERE bookId = ?', [bookId], (error, results) => {
+        if (error) throw error;
+        if (results.length > 0) {
+            res.render('book', { book: results[0], user: req.session.user });
+        } else {
+            res.status(404).send('Book not found');
+        }
+    });
+});
+app.post('/addBook', upload.single('coverImage'), (req, res) => {
+    const { title, author, genre, quantity } = req.body;
+    let coverImage = req.file ? req.file.filename : null;
+
+    const sql = 'INSERT INTO books (title, author, genre, quantity, coverImage) VALUES (?, ?, ?, ?, ?)';
+    pool.query(sql, [title, author, genre, quantity, coverImage], (error, results) => {
+        if (error) {
+            console.error("Error adding book:", error);
+            res.status(500).send('Error adding book');
+        } else {
+            res.redirect('/library');
+        }
+    });
+});
+
+app.get('/deleteBook/:id', checkAuthenticated, checkAdmin, (req, res) => {
+    const bookId = req.params.id;
+
+    pool.query('DELETE FROM books WHERE bookId = ?', [bookId], (error, results) => {
+        if (error) {
+            console.error("Error deleting book:", error);
+            res.status(500).send('Error deleting book');
+        } else {
+            res.redirect('/library');
+        }
+    });
+});
+app.post('/deleteBook/:id', checkAuthenticated, checkAdmin, (req, res) => {
+    const bookId = req.params.id;
+
+    pool.query('DELETE FROM books WHERE bookId = ?', [bookId], (error, results) => {
+        if (error) {
+            console.error("Error deleting book:", error);
+            res.status(500).send('Error deleting book');
+        } else {
+            res.redirect('/library');
+        }
+    });
+});
 app.use('/fines', finesRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Library App server is running at: http://localhost:${PORT}`);
+});//Default route for publisher table//
+app.get('/', (req,res) => {
+    const sql = 'SELECT * FROM publishers';
+    //Fetch data from MySQL
+    connection.query(sql, (error,results) => {
+        if (error) {
+            console.log('Database query error:', error.message);
+            return res.status(500).send('Error Retrieving Publishers');
+            
+        }
+        //Render HTML page with data
+        res.render('index', {publishers:results});
+    });
 });
+
+
+
+
+//Display details of a particular publisher//
+app.get('/publishers/:id', (req, res) => {
+  // Extract the publisher ID from the request parameters
+  const publisher_id = req.params.id;
+
+  // Fetch data from MySQL based on the publisher ID
+  connection.query('SELECT * FROM publishers WHERE publisher_id = ?', [publisher_id], (error, results) => {
+      if (error) throw error;
+
+      // Check if any publisher the given ID was found
+      if (results.length > 0) {
+          // Render HTML page with the publishers data
+          res.render('publishers', { publishers: results[0]});
+      } else {
+          // If no publisher with the given ID was found, render a 404 page or handle it accordingly
+          res.status(404).send('Publisher not found');
+      }
+  });
+});
+
+
+
+
+app.get('/login', (req, res) => {
+    res.render('login', { messages: req.flash('success'), errors: req.flash('error') });
+});
+
+
+
+
+app.get('/addPublisher', (req, res) => {
+    res.render('addPublisher');
+});
+
+app.post('/addPublisher', upload.single('images'),  (req, res) => {
+    // Extract publisher data from the request body
+    const { publisher_name, publisher_address, publisher_country, publisher_contact} = req.body;
+    let images;
+    if (req.file) {
+        images = req.file.filename; // Save only the filename
+    } else {
+        images = "noImage.png";
+    }
+
+    const sql = 'INSERT INTO publishers (publisher_name, publisher_address, publisher_country, publisher_contact, images) VALUES (?, ?, ?, ?, ?)';
+    // Insert the new publisher into the database
+    connection.query(sql , [publisher_name, publisher_address, publisher_country, publisher_contact, images], (error, results) => {
+        if (error) {
+            // Handle any error that occurs during the database operation
+            console.error("Error adding publisher:", error);
+            res.status(500).send('Error adding publisher');
+        } else {
+            // Send a success response
+            res.redirect('/');
+        }
+    });
+});
+
+app.get('/updatePublisher/:id', (req,res) => {
+    const publisher_id = req.params.id;
+    const sql = 'SELECT * FROM publishers WHERE publisher_id = ?'; 
+
+    connection.query(sql, [publisher_id], (error, results) => { 
+        if (error) { 
+            console.error('Database query error:', error.message);
+            return res.status(500).send('Error Retrieving publisher by ID');
+            
+        }
+        
+        if (results.length > 0) { 
+            res.render('updatePublisher', {publishers: results[0]}); 
+        } else {
+            
+           res.status(404).send('Publisher not found');
+    }
+    });
+});
+
+app.post('/updatePublisher/:id', upload.single('images'), (req, res) => {
+    const publisher_id = req.params.id;
+    const {publisher_name,publisher_address,publisher_country,publisher_contact} = req.body;
+    let images  = req.body.currentImages; 
+    if (req.file) { 
+        images = req.file.filename; 
+    } 
+
+    const sql = 'UPDATE publishers SET publisher_name = ? , publisher_address = ?, publisher_country = ?, publisher_contact =?, images =? WHERE publisher_id = ?';
+    // Insert the new publisher into the database
+    connection.query(sql, [publisher_name, publisher_address, publisher_country, publisher_contact, images, publisher_id], (error, results) => {
+        if (error) {
+            // Handle any error that occurs during the database operation
+            console.error("Error updating publisher:", error);
+            res.status(500).send('Error updating publisher');
+        } else {
+            // Send a success response
+            res.redirect('/');
+        }
+    });
+});
+
+//Delete route//
+app.get('/deletePublisher/:id',(req,res) => {
+    const publisher_id = req.params.id;
+    //Extract publisher data from the request body
+    const sql = 'DELETE FROM publishers WHERE publisher_id = ?' ;
+    //Insert the new publisher into the database: connection object to talk to db
+    connection.query(sql, [publisher_id], (error,results) => { //These 4 info is to be passed to SQL statement, which is why there are 4 question marks//
+        if (error) {
+            //Handle any error that occurs during the database operation//
+            console.error("Error deleting publisher:", error);
+            res.status(500).send('Error deleting publisher');
+
+        } else {
+            //Send a success response
+            res.redirect('/');
+        }
+    });
+
+});
+
+
+
+
+
+
+
 
 
