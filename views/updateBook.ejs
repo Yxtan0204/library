@@ -52,16 +52,22 @@
             <div class="mb-3">
               <label for="genre" class="form-label">Genre</label>
               <input type="text" class="form-control" id="genre" name="genre" value="<%= book.genre %>" required>
+            </div>
+            <div class="mb-3">
+              <label for="description" class="form-label">Description</label>
+              <textarea class="form-control" id="description" name="description" rows="3"><%= book.description || '' %></textarea>
+            </div>
             <div class="mb-3">
               <label for="coverImage" class="form-label">Cover Image</label>
               <input type="file" class="form-control" id="coverImage" name="coverImage">
+              <input type="hidden" name="currentImage" value="<%= book.coverImage %>">
               <div class="current-image mt-1">
                 Current: <%= book.coverImage %>
               </div>
             </div>
             <img src="/images/<%= book.coverImage %>" width="20%" onerror="this.src='/images/default.png'">
             <button type="submit" class="btn btn-success">Update Book</button>
-            <a href="/books/<%= book._id %>" class="btn btn-secondary ms-2">Cancel</a>
+            <a href="/library" class="btn btn-secondary ms-2">Cancel</a>
           </form>
         </div>
       </div>
