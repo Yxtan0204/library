@@ -61,9 +61,9 @@ const checkAdmin = (req, res, next) => {
 
 // ✅ Form validation middleware
 const validateRegistration = (req, res, next) => {
-    const { username, email, password, address, contact, role } = req.body;
+    const { username, email, password, contact, role } = req.body;
 
-    if (!username || !email || !password || !address || !contact || !role) {
+    if (!username || !email || !password || !contact || !role) {
         return res.status(400).send('All fields are required.');
     }
 
@@ -77,24 +77,24 @@ const validateRegistration = (req, res, next) => {
 
 // ROUTES
 app.get('/', (req, res) => {
-    res.render('index', {
+    res.render('users table/home', {
         user: req.session.user,
         messages: req.flash('success')
     });
 });
 
 app.get('/register', (req, res) => {
-    res.render('register', {
+    res.render('users table/register', {
         messages: req.flash('error'),
         formData: req.flash('formData')[0]
     });
 });
 
 app.post('/register', validateRegistration, (req, res) => {
-    const { username, email, password, address, contact, role } = req.body;
-    const sql = 'INSERT INTO users (username, email, password, address, contact, role) VALUES (?, ?, SHA1(?), ?, ?, ?)';
+    const { username, email, password, contact, role } = req.body;
+    const sql = 'INSERT INTO users (username, email, password, contact, role) VALUES (?, ?, SHA1(?), ?, ?)';
     
-    pool.query(sql, [username, email, password, address, contact, role], (err, result) => {
+    pool.query(sql, [username, email, password, contact, role], (err, result) => {
         if (err) {
             console.error('Registration error:', err);
             req.flash('error', 'Database error');
@@ -107,7 +107,7 @@ app.post('/register', validateRegistration, (req, res) => {
 });
 
 app.get('/login', (req, res) => {
-    res.render('login', {
+    res.render('users table/login', {
         messages: req.flash('success'),
         errors: req.flash('error')
     });
