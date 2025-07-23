@@ -78,7 +78,7 @@ const validateRegistration = (req, res, next) => {
 // ROUTES
 //USER LOG IN OR REGISTRATION
 app.get('/', (req, res) => {
-    res.render('home', {
+    res.render('homepage', {
         user: req.session.user,
         messages: req.flash('success')
     });
