@@ -75,7 +75,7 @@ const validateRegistration = (req, res, next) => {
     next();
 };
 
-// ROUTES
+// ROUTES FOR LOGIN, REGISTRATION
 app.get('/', (req, res) => {
     pool.query('SELECT * FROM publishers', (error, results) => {
         if (error) {
@@ -152,6 +152,7 @@ app.get('/logout', (req, res) => {
     req.session.destroy();
     res.redirect('/');
 });
+// ROUTES FOR BOOKS
 
 app.get('/library', checkAuthenticated, (req, res) => {
     pool.query('SELECT * FROM books', (error, results) => {
@@ -192,11 +193,11 @@ app.get('/updateBook/:id', checkAuthenticated, checkAdmin, (req, res) => {
 
 app.post('/updateBook/:id', upload.single('coverImage'), (req, res) => {
     const bookId = req.params.id;
-    const { title, author, genre } = req.body;
-    let coverImage = req.body.currentImage;
+    const { title, author, genre, quantity, description, currentImage } = req.body;
+    let coverImage = currentImage;
     if (req.file) coverImage = req.file.filename;
-    const sql = 'UPDATE books SET title = ?, author = ?, genre = ?, coverImage = ? WHERE bookId = ?';
-    pool.query(sql, [title, author, genre, coverImage, bookId], (error, results) => {
+    const sql = 'UPDATE books SET title = ?, author = ?, genre = ?, quantity = ?, description = ?, coverImage = ? WHERE bookId = ?';
+    pool.query(sql, [title, author, genre, quantity, description, coverImage, bookId], (error, results) => {
         if (error) {
             console.error("Error updating book:", error);
             res.status(500).send('Error updating book');
@@ -255,23 +256,22 @@ app.post('/deleteBook/:id', checkAuthenticated, checkAdmin, (req, res) => {
         }
     });
 });
-app.use('/fines', finesRoutes);
+
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Library App server is running at: http://localhost:${PORT}`);
 });//Default route for publisher table//
-app.get('/', (req,res) => {
-    const sql = 'SELECT * FROM publishers';
-    //Fetch data from MySQL
-    connection.query(sql, (error,results) => {
+app.get('/publishers', checkAuthenticated, (req, res) => {
+    pool.query('SELECT * FROM publishers', (error, results) => {
         if (error) {
-            console.log('Database query error:', error.message);
-            return res.status(500).send('Error Retrieving Publishers');
-            
+            console.error("Error fetching publishers:", error);
+            res.status(500).send('Error fetching publishers');
+        } else {
+            // If you want to show a list, pass results as an array
+            res.render('publishers', { publishers: results[0], user: req.session.user });
+            // Or for a list: res.render('publishers', { publishers: results, user: req.session.user });
         }
-        //Render HTML page with data
-        res.render('index', {publishers:results});
     });
 });
 
@@ -284,7 +284,7 @@ app.get('/publishers/:id', (req, res) => {
   const publisher_id = req.params.id;
 
   // Fetch data from MySQL based on the publisher ID
-  connection.query('SELECT * FROM publishers WHERE publisher_id = ?', [publisher_id], (error, results) => {
+    pool.query('SELECT * FROM publishers WHERE publisher_id = ?', [publisher_id], (error, results) => {
       if (error) throw error;
 
       // Check if any publisher the given ID was found
@@ -297,15 +297,6 @@ app.get('/publishers/:id', (req, res) => {
       }
   });
 });
-
-
-
-
-app.get('/login', (req, res) => {
-    res.render('login', { messages: req.flash('success'), errors: req.flash('error') });
-});
-
-
 
 
 app.get('/addPublisher', (req, res) => {
@@ -324,7 +315,7 @@ app.post('/addPublisher', upload.single('images'),  (req, res) => {
 
     const sql = 'INSERT INTO publishers (publisher_name, publisher_address, publisher_country, publisher_contact, images) VALUES (?, ?, ?, ?, ?)';
     // Insert the new publisher into the database
-    connection.query(sql , [publisher_name, publisher_address, publisher_country, publisher_contact, images], (error, results) => {
+    pool.query(sql , [publisher_name, publisher_address, publisher_country, publisher_contact, images], (error, results) => {
         if (error) {
             // Handle any error that occurs during the database operation
             console.error("Error adding publisher:", error);
@@ -340,7 +331,7 @@ app.get('/updatePublisher/:id', (req,res) => {
     const publisher_id = req.params.id;
     const sql = 'SELECT * FROM publishers WHERE publisher_id = ?'; 
 
-    connection.query(sql, [publisher_id], (error, results) => { 
+    pool.query(sql, [publisher_id], (error, results) => { 
         if (error) { 
             console.error('Database query error:', error.message);
             return res.status(500).send('Error Retrieving publisher by ID');
@@ -366,7 +357,7 @@ app.post('/updatePublisher/:id', upload.single('images'), (req, res) => {
 
     const sql = 'UPDATE publishers SET publisher_name = ? , publisher_address = ?, publisher_country = ?, publisher_contact =?, images =? WHERE publisher_id = ?';
     // Insert the new publisher into the database
-    connection.query(sql, [publisher_name, publisher_address, publisher_country, publisher_contact, images, publisher_id], (error, results) => {
+    pool.query(sql, [publisher_name, publisher_address, publisher_country, publisher_contact, images, publisher_id], (error, results) => {
         if (error) {
             // Handle any error that occurs during the database operation
             console.error("Error updating publisher:", error);
@@ -384,7 +375,7 @@ app.get('/deletePublisher/:id',(req,res) => {
     //Extract publisher data from the request body
     const sql = 'DELETE FROM publishers WHERE publisher_id = ?' ;
     //Insert the new publisher into the database: connection object to talk to db
-    connection.query(sql, [publisher_id], (error,results) => { //These 4 info is to be passed to SQL statement, which is why there are 4 question marks//
+    pool.query(sql, [publisher_id], (error,results) => { //These 4 info is to be passed to SQL statement, which is why there are 4 question marks//
         if (error) {
             //Handle any error that occurs during the database operation//
             console.error("Error deleting publisher:", error);
