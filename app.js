@@ -133,9 +133,9 @@ app.post('/login', (req, res) => {
             req.session.user = results[0];
             req.flash('success', 'Login successful!');
             if (req.session.user.role === 'user') {
-                res.redirect('library');
+                res.redirect('/library');
             } else {
-                res.redirect('publisher');
+                res.redirect('/library');
             }
         } else {
             req.flash('error', 'Invalid email or password.');
@@ -263,16 +263,16 @@ app.post('/deleteBook/:id', checkAuthenticated, checkAdmin, (req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Library App server is running at: http://localhost:${PORT}`);
-});//Default route for publisher table//
+});
+
 app.get('/publishers', checkAuthenticated, (req, res) => {
     pool.query('SELECT * FROM publishers', (error, results) => {
         if (error) {
             console.error("Error fetching publishers:", error);
             res.status(500).send('Error fetching publishers');
         } else {
-            // If you want to show a list, pass results as an array
-            res.render('publishers', { publishers: results[0], user: req.session.user });
-            // Or for a list: res.render('publishers', { publishers: results, user: req.session.user });
+            // Pass the full array of publishers to the template
+            res.render('publishers', { publishers: results, user: req.session.user });
         }
     });
 });
@@ -366,7 +366,7 @@ app.post('/updatePublisher/:id', upload.single('images'), (req, res) => {
             res.status(500).send('Error updating publisher');
         } else {
             // Send a success response
-            res.redirect('/');
+            res.redirect('/library');
         }
     });
 });
