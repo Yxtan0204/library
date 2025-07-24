@@ -157,9 +157,34 @@ app.get('/logout', (req, res) => {
 // ROUTES FOR BOOKS
 
 app.get('/library', checkAuthenticated, (req, res) => {
-    pool.query('SELECT * FROM books', (error, results) => {
-        if (error) throw error;
-        res.render('library', { books: results, user: req.session.user });
+    const { search, genre } = req.query;
+    let sql = 'SELECT * FROM books WHERE 1=1';
+    let params = [];
+
+    if (search) {
+        sql += ' AND (title LIKE ? OR author LIKE ?)';
+        params.push(`%${search}%`, `%${search}%`);
+    }
+    if (genre) {
+        sql += ' AND genre = ?';
+        params.push(genre);
+    }
+
+    // Get all genres for the filter dropdown
+    pool.query('SELECT DISTINCT genre FROM books', (err, genreResults) => {
+        if (err) throw err;
+        const genres = genreResults.map(row => row.genre);
+
+        pool.query(sql, params, (error, results) => {
+            if (error) throw error;
+            res.render('library', {
+                books: results,
+                user: req.session.user,
+                genres,
+                genre,
+                search
+            });
+        });
     });
 });
 
@@ -259,6 +284,25 @@ app.post('/deleteBook/:id', checkAuthenticated, checkAdmin, (req, res) => {
     });
 });
 
+app.get('/cart/add/:id', checkAuthenticated, (req, res) => {
+  if (!req.session.cart) req.session.cart = [];
+  if (!req.session.cart.includes(req.params.id)) req.session.cart.push(req.params.id);
+  res.redirect('/library');
+});
+
+app.get('/cart', checkAuthenticated, (req, res) => {
+  const cart = req.session.cart || [];
+  if (cart.length === 0) return res.render('cart', { books: [], user: req.session.user });
+  pool.query('SELECT * FROM books WHERE bookId IN (?)', [cart], (err, results) => {
+    if (err) throw err;
+    res.render('cart', { books: results, user: req.session.user });
+  });
+});
+
+app.get('/cart/remove/:id', checkAuthenticated, (req, res) => {
+  req.session.cart = (req.session.cart || []).filter(id => id !== req.params.id);
+  res.redirect('/cart');
+});
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
@@ -266,12 +310,20 @@ app.listen(PORT, () => {
 });
 
 app.get('/publishers', checkAuthenticated, (req, res) => {
-    pool.query('SELECT * FROM publishers', (error, results) => {
+    const search = req.query.query;
+    let sql = 'SELECT * FROM publishers';
+    let params = [];
+
+    if (search) {
+        sql += ' WHERE publisher_name LIKE ? OR publisher_country LIKE ? OR publisher_address LIKE ?';
+        params = [`%${search}%`, `%${search}%`, `%${search}%`];
+    }
+
+    pool.query(sql, params, (error, results) => {
         if (error) {
             console.error("Error fetching publishers:", error);
             res.status(500).send('Error fetching publishers');
         } else {
-            // Pass the full array of publishers to the template
             res.render('publishers', { publishers: results, user: req.session.user });
         }
     });
@@ -281,7 +333,7 @@ app.get('/publishers', checkAuthenticated, (req, res) => {
 
 
 //Display details of a particular publisher//
-app.get('/publishers/:id', (req, res) => {
+app.get('/publishers/:id', checkAuthenticated, (req, res) => {
   // Extract the publisher ID from the request parameters
   const publisher_id = req.params.id;
 
@@ -301,11 +353,11 @@ app.get('/publishers/:id', (req, res) => {
 });
 
 
-app.get('/addPublisher', (req, res) => {
-    res.render('addPublisher');
+app.get('/addPublisher', checkAuthenticated, checkAdmin, (req, res) => {
+    res.render('addPublisher', { user: req.session.user });
 });
 
-app.post('/addPublisher', upload.single('images'),  (req, res) => {
+app.post('/addPublisher', upload.single('images'), (req, res) => {
     // Extract publisher data from the request body
     const { publisher_name, publisher_address, publisher_country, publisher_contact} = req.body;
     let images;
@@ -324,12 +376,12 @@ app.post('/addPublisher', upload.single('images'),  (req, res) => {
             res.status(500).send('Error adding publisher');
         } else {
             // Send a success response
-            res.redirect('/');
+            res.redirect('/publishers');
         }
     });
 });
 
-app.get('/updatePublisher/:id', (req,res) => {
+app.get('/updatePublisher/:id', checkAuthenticated, checkAdmin,(req,res) => {
     const publisher_id = req.params.id;
     const sql = 'SELECT * FROM publishers WHERE publisher_id = ?'; 
 
@@ -339,9 +391,9 @@ app.get('/updatePublisher/:id', (req,res) => {
             return res.status(500).send('Error Retrieving publisher by ID');
             
         }
-        
-        if (results.length > 0) { 
-            res.render('updatePublisher', {publishers: results[0]}); 
+
+        if (results.length > 0) {
+            res.render('updatePublisher', {publishers: results[0]});
         } else {
             
            res.status(404).send('Publisher not found');
@@ -366,13 +418,13 @@ app.post('/updatePublisher/:id', upload.single('images'), (req, res) => {
             res.status(500).send('Error updating publisher');
         } else {
             // Send a success response
-            res.redirect('/library');
+            res.redirect('/publishers');
         }
     });
 });
 
 //Delete route//
-app.get('/deletePublisher/:id',(req,res) => {
+app.get('/deletePublisher/:id', checkAuthenticated, checkAdmin, (req,res) => {
     const publisher_id = req.params.id;
     //Extract publisher data from the request body
     const sql = 'DELETE FROM publishers WHERE publisher_id = ?' ;
@@ -385,11 +437,12 @@ app.get('/deletePublisher/:id',(req,res) => {
 
         } else {
             //Send a success response
-            res.redirect('/');
+            res.redirect('/publishers');
         }
     });
-
 });
+
+
 
 
 
