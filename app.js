@@ -266,7 +266,16 @@ app.listen(PORT, () => {
 });
 
 app.get('/publishers', checkAuthenticated, (req, res) => {
-    pool.query('SELECT * FROM publishers', (error, results) => {
+    const search = req.query.query;
+    let sql = 'SELECT * FROM publishers';
+    let params = [];
+
+    if (search) {
+        sql += ' WHERE publisher_name LIKE ? OR publisher_country LIKE ? OR publisher_address LIKE ?';
+        params = [`%${search}%`, `%${search}%`, `%${search}%`];
+    }
+
+    pool.query(sql, params, (error, results) => {
         if (error) {
             console.error("Error fetching publishers:", error);
             res.status(500).send('Error fetching publishers');
