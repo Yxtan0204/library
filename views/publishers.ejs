@@ -1,4 +1,4 @@
-<!-- product.ejs -->
+<!-- publishers.ejs -->
 
 <!DOCTYPE html>
 <html lang="en">
@@ -20,17 +20,11 @@
             <ul class="navbar-nav">
               <% if (user.role === "admin") { %>
                 <li class="nav-item">
-                  <a class="nav-link" href="/editPublisher">Update Publisher</a>
-                </li> 
-                <li class="nav-item">
                   <a class="nav-link" href="/addPublisher">Add new Publisher</a>
-                </li> 
-                 <li class="nav-item">
-                  <a class="nav-link" href="/deletePublisher">Delete Publisher</a>
                 </li> 
               <% } %>
               <li class="nav-item">
-                <a class="nav-link" href="/">Back to Home</a>
+                <a class="nav-link" href="/Library">Back to Home</a>
               </li> 
             </ul>
           </div>
