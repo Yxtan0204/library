@@ -157,9 +157,34 @@ app.get('/logout', (req, res) => {
 // ROUTES FOR BOOKS
 
 app.get('/library', checkAuthenticated, (req, res) => {
-    pool.query('SELECT * FROM books', (error, results) => {
-        if (error) throw error;
-        res.render('library', { books: results, user: req.session.user });
+    const { search, genre } = req.query;
+    let sql = 'SELECT * FROM books WHERE 1=1';
+    let params = [];
+
+    if (search) {
+        sql += ' AND (title LIKE ? OR author LIKE ?)';
+        params.push(`%${search}%`, `%${search}%`);
+    }
+    if (genre) {
+        sql += ' AND genre = ?';
+        params.push(genre);
+    }
+
+    // Get all genres for the filter dropdown
+    pool.query('SELECT DISTINCT genre FROM books', (err, genreResults) => {
+        if (err) throw err;
+        const genres = genreResults.map(row => row.genre);
+
+        pool.query(sql, params, (error, results) => {
+            if (error) throw error;
+            res.render('library', {
+                books: results,
+                user: req.session.user,
+                genres,
+                genre,
+                search
+            });
+        });
     });
 });
 
@@ -259,6 +284,25 @@ app.post('/deleteBook/:id', checkAuthenticated, checkAdmin, (req, res) => {
     });
 });
 
+app.get('/cart/add/:id', checkAuthenticated, (req, res) => {
+  if (!req.session.cart) req.session.cart = [];
+  if (!req.session.cart.includes(req.params.id)) req.session.cart.push(req.params.id);
+  res.redirect('/library');
+});
+
+app.get('/cart', checkAuthenticated, (req, res) => {
+  const cart = req.session.cart || [];
+  if (cart.length === 0) return res.render('cart', { books: [], user: req.session.user });
+  pool.query('SELECT * FROM books WHERE bookId IN (?)', [cart], (err, results) => {
+    if (err) throw err;
+    res.render('cart', { books: results, user: req.session.user });
+  });
+});
+
+app.get('/cart/remove/:id', checkAuthenticated, (req, res) => {
+  req.session.cart = (req.session.cart || []).filter(id => id !== req.params.id);
+  res.redirect('/cart');
+});
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
@@ -276,7 +320,6 @@ app.get('/publishers', checkAuthenticated, (req, res) => {
         }
     });
 });
-
 
 
 
@@ -390,6 +433,8 @@ app.get('/deletePublisher/:id',(req,res) => {
     });
 
 });
+
+
 
 
 
