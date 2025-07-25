@@ -12,25 +12,13 @@
   <!-- Navbar -->
   <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container-fluid">
-      <a class="navbar-brand" href="/">Library App</a>
+      <a class="navbar-brand" href="/library">Library App</a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
         <span class="navbar-toggler-icon"></span>
       </button>
       <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav ms-auto">
           <% if (user) { %>
-            <li class="nav-item">
-              <a class="nav-link" href="/library">Library</a>
-            </li>
-            <% if (user.role === 'admin') { %>
-              <li class="nav-item">
-                <a class="nav-link" href="/library">Manage Books</a>
-              </li>
-            <% } else { %>
-              <li class="nav-item">
-                <a class="nav-link" href="/myBooks">My Book List</a>
-              </li>
-            <% } %>
             <li class="nav-item">
               <a class="nav-link" href="/logout">Logout</a>
             </li>
@@ -68,7 +56,6 @@
         <p><strong>Quantity:</strong> <%= book.quantity || 'N/A' %></p>
         <p><strong>Genre:</strong> <%= book.genre || 'N/A' %></p>
         <p><strong>Description:</strong> <%= book.description || 'No description provided.' %></p>
-        
       </div>
     <% } else { %>
       <div class="alert alert-warning">No book found.</div>
@@ -79,3 +66,5 @@
 
 </body>
 </html>
+
+

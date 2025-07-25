@@ -1,0 +1,67 @@
+body {
+  background-color: #f3efea; /* light beige background */
+  color: #f8f4ee; /* dark brown text */
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.navbar {
+  background-color: #9b886b !important; /* dark brown navbar */
+}
+
+.navbar .nav-link,
+.navbar .navbar-brand {
+  color: #fff !important;
+}
+
+.navbar .nav-link:hover {
+  color: #ffd9a0 !important; /* soft highlight */
+}
+
+.btn-primary {
+  background-color: #8b5e3c;
+  border-color: #8b5e3c;
+}
+
+.btn-primary:hover {
+  background-color: #a06d4e;
+  border-color: #a06d4e;
+}
+
+.hero {
+  height: 90vh;
+  background: url('/images/library-bg.jpg') no-repeat center center/cover;
+  position: relative;
+}
+
+.overlay {
+  background-color: rgba(0, 0, 0, 0.6); /* darken the background for readability */
+  border-radius: 10px;
+}
+
+
+.card,
+.bg-light {
+  background-color: #fffaf3 !important;
+}
+
+.badge.bg-danger {
+  background-color: #b03e00 !important; /* warm red badge */
+}
+
+  body {
+    background-image: url('/images/library.png');
+    background-size: cover;        /* Resize image to cover the whole area */
+    background-position: center;   /* Center the image */
+    background-repeat: no-repeat;  /* Prevent repetition */
+    background-attachment: fixed;  /* Make it stay on scroll */
+  }
+
+body::before {
+  content: "";
+  background: rgba(0, 0, 0, 0.5); /* Dark overlay */
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: -1;
+}
+
+
