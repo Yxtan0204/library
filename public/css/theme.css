@@ -64,4 +64,11 @@ body::before {
   z-index: -1;
 }
 
+table thead.thead-person{
+  background-color: #765c34 !important; /* dark brown header */
+  color: white;
+}
+
+
+
 
