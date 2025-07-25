@@ -76,10 +76,10 @@
             <td><%= publishers[i].publisher_country %></td>
             <td><%= publishers[i].publisher_contact %></td>
             <td>
-              <% if (publishers[i].images) { %>
+              <% if (publishers[i].images) { %> <!--Check if current publisher has image and displays publisher's uploaded image-->
                 <img src="/images/<%= publishers[i].images %>" class="publisher-image" alt="Publisher Image">
               <% } else { %>
-                <img src="/images/default.jpg" class="publisher-image" alt="No Image">
+                <img src="/images/default.jpg" class="publisher-image" alt="No Image"> <!--If no image, display a default image, this makes sure an image is ALWAYS shown for publisher-->
               <% } %>
             </td>
             <% if (user.role === 'admin') { %>

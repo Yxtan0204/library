@@ -332,25 +332,26 @@ app.get('/publishers', checkAuthenticated, (req, res) => {
 
 
 
-//Display details of a particular publisher//
 app.get('/publishers/:id', checkAuthenticated, (req, res) => {
-  // Extract the publisher ID from the request parameters
   const publisher_id = req.params.id;
 
-  // Fetch data from MySQL based on the publisher ID
-    pool.query('SELECT * FROM publishers WHERE publisher_id = ?', [publisher_id], (error, results) => {
-      if (error) throw error;
+  pool.query('SELECT * FROM publishers WHERE publisher_id = ?', [publisher_id], (error, results) => {
+    if (error) {
+      console.error("Error fetching publisher by ID:", error);
+      return res.status(500).send('Server error');
+    }
 
-      // Check if any publisher the given ID was found
-      if (results.length > 0) {
-          // Render HTML page with the publishers data
-          res.render('publishers', { publishers: results[0]});
-      } else {
-          // If no publisher with the given ID was found, render a 404 page or handle it accordingly
-          res.status(404).send('Publisher not found');
-      }
+    if (results.length > 0) {
+      res.render('publisherDetails', {
+        publisher: results[0],
+        user: req.session.user
+      });
+    } else {
+      res.status(404).send('Publisher not found');
+    }
   });
 });
+
 
 
 app.get('/addPublisher', checkAuthenticated, checkAdmin, (req, res) => {
