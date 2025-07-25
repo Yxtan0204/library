@@ -4,7 +4,6 @@ const session = require('express-session');
 const flash = require('connect-flash');
 const multer = require('multer');
 const app = express();
-
 const finesRoutes = require('./fines/finesRoutes');
 
 
@@ -19,7 +18,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
-// ✅ Use connection pool (NOT single connection)
+// Use connection pool (NOT single connection)
 const pool = mysql.createPool({
     host: 'ozitwa.h.filess.io',
     port: 3307,
@@ -36,7 +35,7 @@ app.set('view engine', 'ejs');
 app.use(express.static('public'));
 app.use(express.urlencoded({ extended: false }));
 
-// ✅ Session Middleware
+// Session Middleware
 app.use(session({
     secret: 'secret',
     resave: false,
@@ -45,21 +44,21 @@ app.use(session({
 }));
 app.use(flash());
 
-// ✅ Middleware to check if user is logged in
+// To check if user is logged in
 const checkAuthenticated = (req, res, next) => {
     if (req.session.user) return next();
     req.flash('error', 'Please log in to view this resource');
     res.redirect('/login');
 };
 
-// ✅ Middleware to check if user is admin
+// To check if user is admin
 const checkAdmin = (req, res, next) => {
     if (req.session.user.role === 'admin') return next();
     req.flash('error', 'Access denied');
     res.redirect('/shopping');
 };
 
-// ✅ Form validation middleware
+//  Form validation 
 const validateRegistration = (req, res, next) => {
     const { username, email, password, contact, role } = req.body;
 
@@ -75,21 +74,21 @@ const validateRegistration = (req, res, next) => {
     next();
 };
 
-// ROUTES
+// homepage route
 app.get('/', (req, res) => {
     res.render('homepage', {
         user: req.session.user,
         messages: req.flash('success')
     });
 });
-
+//register route
 app.get('/register', (req, res) => {
     res.render('register', {
         messages: req.flash('error'),
         formData: req.flash('formData')[0]
     });
 });
-
+//validate registration
 app.post('/register', validateRegistration, (req, res) => {
     const { username, email, password, contact, role } = req.body;
     const sql = 'INSERT INTO users (username, email, password, contact, role) VALUES (?, ?, SHA1(?), ?, ?)';
@@ -105,14 +104,14 @@ app.post('/register', validateRegistration, (req, res) => {
         res.redirect('/login');
     });
 });
-
+// get login 
 app.get('/login', (req, res) => {
     res.render('login', {
         messages: req.flash('success'),
         errors: req.flash('error')
     });
 });
-
+// post login 
 app.post('/login', (req, res) => {
     const { email, password } = req.body;
 
@@ -143,7 +142,7 @@ app.post('/login', (req, res) => {
         }
     });
 });
-
+// logout route
 app.get('/logout', (req, res) => {
     req.flash('success', 'You have been logged out.');
     req.session.destroy((err) => {
@@ -156,6 +155,7 @@ app.get('/logout', (req, res) => {
 });
 // ROUTES FOR BOOKS
 
+// Main library route
 app.get('/library', checkAuthenticated, (req, res) => {
     const { search, genre } = req.query;
     let sql = 'SELECT * FROM books WHERE 1=1';
@@ -188,10 +188,12 @@ app.get('/library', checkAuthenticated, (req, res) => {
     });
 });
 
+// Add book route ( GET method)
 app.get('/addBook', checkAuthenticated, checkAdmin, (req, res) => {
     res.render('addBook', { user: req.session.user });
 });
 
+// Add book route ( POST method)
 app.post('/addBook', upload.single('coverImage'), (req, res) => {
     const { title, author, genre, quantity } = req.body;
     let coverImage = req.file ? req.file.filename : null;
@@ -206,6 +208,8 @@ app.post('/addBook', upload.single('coverImage'), (req, res) => {
         }
     });
 });
+
+// Update book route ( GET method)
 app.get('/updateBook/:id', checkAuthenticated, checkAdmin, (req, res) => {
     const bookId = req.params.id;
     pool.query('SELECT * FROM books WHERE bookId = ?', [bookId], (error, results) => {
@@ -218,6 +222,8 @@ app.get('/updateBook/:id', checkAuthenticated, checkAdmin, (req, res) => {
     });
 });
 
+
+// Update book route ( POST method)
 app.post('/updateBook/:id', upload.single('coverImage'), (req, res) => {
     const bookId = req.params.id;
     const { title, author, genre, quantity, description, currentImage } = req.body;
@@ -233,6 +239,7 @@ app.post('/updateBook/:id', upload.single('coverImage'), (req, res) => {
         }
     });
 });
+// View book details route
 app.get('/book/:id', checkAuthenticated, (req, res) => {
     const bookId = req.params.id;
     pool.query('SELECT * FROM books WHERE bookId = ?', [bookId], (error, results) => {
@@ -244,21 +251,8 @@ app.get('/book/:id', checkAuthenticated, (req, res) => {
         }
     });
 });
-app.post('/addBook', upload.single('coverImage'), (req, res) => {
-    const { title, author, genre, quantity } = req.body;
-    let coverImage = req.file ? req.file.filename : null;
 
-    const sql = 'INSERT INTO books (title, author, genre, quantity, coverImage) VALUES (?, ?, ?, ?, ?)';
-    pool.query(sql, [title, author, genre, quantity, coverImage], (error, results) => {
-        if (error) {
-            console.error("Error adding book:", error);
-            res.status(500).send('Error adding book');
-        } else {
-            res.redirect('/library');
-        }
-    });
-});
-
+// Delete book route ( GET  method)
 app.get('/deleteBook/:id', checkAuthenticated, checkAdmin, (req, res) => {
     const bookId = req.params.id;
 
@@ -271,6 +265,7 @@ app.get('/deleteBook/:id', checkAuthenticated, checkAdmin, (req, res) => {
         }
     });
 });
+// Delete book route ( POST method)
 app.post('/deleteBook/:id', checkAuthenticated, checkAdmin, (req, res) => {
     const bookId = req.params.id;
 
@@ -283,32 +278,107 @@ app.post('/deleteBook/:id', checkAuthenticated, checkAdmin, (req, res) => {
         }
     });
 });
+// Cart route ( GET method, add books to cart after checking if user is authenticated)
+// Add book to cart
+app.get('/cart/add/:id', (req, res) => {
+  const id = req.params.id;
 
-app.get('/cart/add/:id', checkAuthenticated, (req, res) => {
+  // Ensure cart exists in session
   if (!req.session.cart) req.session.cart = [];
-  if (!req.session.cart.includes(req.params.id)) req.session.cart.push(req.params.id);
-  res.redirect('/library');
+
+  // To Avoid duplicates
+  const alreadyInCart = req.session.cart.some(book => book.bookId == id);
+  if (alreadyInCart) {
+    return res.redirect('/library');
+  }
+
+  // Fetch book info from MYSQL
+  pool.query('SELECT * FROM books WHERE bookId = ?', [id], (err, rows) => {
+    if (err) {
+      console.error('Error retrieving book:', err);
+      return res.status(500).send('Error retrieving book.');
+    }
+
+    if (rows.length > 0) {
+      const book = rows[0];
+
+      req.session.cart.push({
+        bookId: book.bookId,      
+        title: book.title,
+        author: book.author,
+        quantity: book.quantity
+      });
+    }
+
+    res.redirect('/library');
+  });
 });
 
+
+// View cart
 app.get('/cart', checkAuthenticated, (req, res) => {
   const cart = req.session.cart || [];
-  if (cart.length === 0) return res.render('cart', { books: [], user: req.session.user });
-  pool.query('SELECT * FROM books WHERE bookId IN (?)', [cart], (err, results) => {
-    if (err) throw err;
+
+  if (cart.length === 0) {
+    return res.render('cart', { books: [], user: req.session.user });
+  }
+
+  // Get just the book IDs
+  const bookIds = cart.map(book => book.bookId);
+
+  // Use IN clause to fetch all book details
+  pool.query('SELECT * FROM books WHERE bookId IN (?)', [bookIds], (err, results) => {
+    if (err) {
+      console.error('Error loading cart books:', err);
+      return res.status(500).send('Error loading cart books');
+    }
+
     res.render('cart', { books: results, user: req.session.user });
   });
 });
 
+
+// Remove book from cart
 app.get('/cart/remove/:id', checkAuthenticated, (req, res) => {
-  req.session.cart = (req.session.cart || []).filter(id => id !== req.params.id);
+  const bookIdToRemove = req.params.id;
+  req.session.cart = (req.session.cart || []).filter(book => book.bookId != bookIdToRemove);
   res.redirect('/cart');
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`Library App server is running at: http://localhost:${PORT}`);
+app.post('/checkout', async (req, res) => {
+  const cart = req.session.cart || [];
+
+  if (!cart.length) return res.redirect('/cart');
+
+  try {
+    const db = pool.promise(); // get promise pool
+
+    for (let { bookId } of cart) {
+      const [[book]] = await db.query('SELECT quantity FROM books WHERE bookId = ?', [bookId]);
+
+      if (!book || book.quantity <= 0) {
+        return res.status(400).send(`Book ID ${bookId} is out of stock.`);
+      }
+
+      await db.query('UPDATE books SET quantity = quantity - 1 WHERE bookId = ?', [bookId]);
+    }
+
+    req.session.cart = []; // clear cart
+    res.redirect('/checkout-success');
+
+  } catch (err) {
+    console.error('Checkout error:', err);
+    res.status(500).send('Checkout failed.');
+  }
 });
 
+// GET /checkout-success
+app.get('/checkout-success', (req, res) => {
+  res.render('checkout-success'); // render the EJS file
+});
+
+
+// publishers route ( GET method)
 app.get('/publishers', checkAuthenticated, (req, res) => {
     const search = req.query.query;
     let sql = 'SELECT * FROM publishers';
@@ -352,11 +422,13 @@ app.get('/publishers/:id', checkAuthenticated, (req, res) => {
   });
 });
 
-
+// Add publisher route ( GET method)
 app.get('/addPublisher', checkAuthenticated, checkAdmin, (req, res) => {
     res.render('addPublisher', { user: req.session.user });
 });
 
+
+// Add publisher route ( POST method)
 app.post('/addPublisher', upload.single('images'), (req, res) => {
     // Extract publisher data from the request body
     const { publisher_name, publisher_address, publisher_country, publisher_contact} = req.body;
@@ -381,6 +453,7 @@ app.post('/addPublisher', upload.single('images'), (req, res) => {
     });
 });
 
+// Update publisher route ( GET method)
 app.get('/updatePublisher/:id', checkAuthenticated, checkAdmin,(req,res) => {
     const publisher_id = req.params.id;
     const sql = 'SELECT * FROM publishers WHERE publisher_id = ?'; 
@@ -401,6 +474,7 @@ app.get('/updatePublisher/:id', checkAuthenticated, checkAdmin,(req,res) => {
     });
 });
 
+// Update publisher route ( POST method)
 app.post('/updatePublisher/:id', upload.single('images'), (req, res) => {
     const publisher_id = req.params.id;
     const {publisher_name,publisher_address,publisher_country,publisher_contact} = req.body;
@@ -423,7 +497,7 @@ app.post('/updatePublisher/:id', upload.single('images'), (req, res) => {
     });
 });
 
-//Delete route//
+//Delete publisher route ( GET method)
 app.get('/deletePublisher/:id', checkAuthenticated, checkAdmin, (req,res) => {
     const publisher_id = req.params.id;
     //Extract publisher data from the request body
@@ -442,7 +516,10 @@ app.get('/deletePublisher/:id', checkAuthenticated, checkAdmin, (req,res) => {
     });
 });
 
-
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Library App server is running at: http://localhost:${PORT}`);
+});
 
 
 
