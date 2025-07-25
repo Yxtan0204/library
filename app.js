@@ -66,8 +66,8 @@ const validateRegistration = (req, res, next) => {
         return res.status(400).send('All fields are required.');
     }
 
-    if (password.length < 6) {
-        req.flash('error', 'Password should be at least 6 or more characters long');
+    if (password.length < 8) {
+        req.flash('error', 'Password should be at least 8 or more characters long');
         req.flash('formData', req.body);
         return res.redirect('/register');
     }
