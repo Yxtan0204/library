@@ -153,7 +153,15 @@ app.get('/logout', (req, res) => {
         res.redirect('/');
     });
 });
-// ROUTES FOR BOOKS
+app.get('/forgot-password', (req, res) => {
+  res.render('forgot-password'); 
+});
+app.post('/forgot-password', (req, res) => {
+  const email = req.body.email;
+  res.render('forgot-success', { email });
+});
+
+// ROUTES FOR BOOKS TABLE
 
 // Main library route
 app.get('/library', checkAuthenticated, (req, res) => {
