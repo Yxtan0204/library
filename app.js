@@ -151,10 +151,15 @@ app.post('/login', (req, res) => {
             id: results[0].id,
             username: results[0].username,
             email: results[0].email,
+            contact: results[0].contact,
             role: results[0].role
         };
     });
 });
+app.get('/profile', checkAuthenticated, (req, res) => {
+  res.render('profile', { user: req.session.user });
+});
+
 // logout route
 app.get('/logout', (req, res) => {
     req.flash('success', 'You have been logged out.');

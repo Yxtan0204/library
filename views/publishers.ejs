@@ -1,12 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="/css/theme.css" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Publisher Page</title>
+
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
+  <link href="/css/theme.css" rel="stylesheet" />
+
+  <!-- Bootstrap JS Bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
   <style>
     .publisher-image {
       width: 120px;
@@ -23,83 +29,112 @@
   </style>
 </head>
 <body>
-  <nav class="navbar navbar-expand-sm bg-dark navbar-dark">
-    <div class="container-fluid">
-      <a class="navbar-brand" href="/publishers">Publisher Page</a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#collapsibleNavbar">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      <div class="collapse navbar-collapse" id="collapsibleNavbar">
-        <ul class="navbar-nav">
-          <% if (user.role === "admin") { %>
-            <li class="nav-item">
-              <a class="nav-link" href="/addPublisher">Add new Publisher</a>
-            </li> 
-          <% } %>
+
+<!-- Navbar -->
+<nav class="navbar navbar-expand-sm bg-dark navbar-dark">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="/publishers">Publisher Page</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#collapsibleNavbar">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="collapsibleNavbar">
+      <!-- Left nav -->
+      <ul class="navbar-nav">
+        <% if (user && user.role === "admin") { %>
           <li class="nav-item">
-            <a class="nav-link" href="/Library">Back to Home</a>
-          </li> 
-           <li class="nav-item">
-            <a class="nav-link" href="/logout">Logout</a>
+            <a class="nav-link" href="/addPublisher">Add new Publisher</a>
           </li>
-        </ul>
-      </div>
+        <% } %>
+        <li class="nav-item">
+          <a class="nav-link" href="/library">Back to Home</a>
+        </li>
+      </ul>
+
+      <!-- Right nav -->
+      <ul class="navbar-nav ms-auto">
+        <% if (user) { %>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              <i class="bi bi-person-circle fs-4"></i>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+              <li><span class="dropdown-item-text fw-bold"><%= user.username || user.name %></span></li>
+              <li><span class="dropdown-item-text text-muted"><%= user.email %></span></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="/profile">Profile</a></li>
+              <li><a class="dropdown-item" href="/borrowed-books">Borrowed Books</a></li>
+              <li><a class="dropdown-item text-danger" href="/logout">Logout</a></li>
+            </ul>
+          </li>
+        <% } else { %>
+          <li class="nav-item">
+            <a class="nav-link" href="/login">Login</a>
+          </li>
+        <% } %>
+      </ul>
     </div>
-  </nav>
-
-  <div class="text-center mt-4"><h2>Publisher List</h2></div>
-
-  <!-- Centered Large Search Bar -->
-  <div class="d-flex justify-content-center mt-4 mb-3">
-    <form class="d-flex" method="GET" action="/publishers">
-      <input class="form-control me-2 search-input" type="search" name="query" placeholder="Search by name, address, or country">
-      <button class="btn btn-primary" type="submit">Search</button>
-    </form>
   </div>
+</nav>
 
-  <div class="table-responsive px-3">
-    <table class="table table-striped align-middle text-center">
-      <thead class = "thead-brown">
+<!-- Page Title -->
+<div class="text-center mt-4">
+  <h2>Publisher List</h2>
+</div>
+
+<!-- Search Bar -->
+<div class="d-flex justify-content-center mt-4 mb-3">
+  <form class="d-flex" method="GET" action="/publishers">
+    <input class="form-control me-2 search-input" type="search" name="query" placeholder="Search by name, address, or country" value="<%= typeof query !== 'undefined' ? query : '' %>" />
+    <button class="btn btn-primary" type="submit">Search</button>
+  </form>
+</div>
+
+<!-- Publisher Table -->
+<div class="table-responsive px-3">
+  <table class="table table-striped align-middle text-center">
+    <thead class="thead-brown">
+      <tr>
+        <th>Publisher Name</th>
+        <th>Address</th>
+        <th>Country</th>
+        <th>Contact</th>
+        <th>Image</th>
+        <% if (user && user.role === 'admin') { %>
+          <th>Edit</th>
+          <th>Delete</th>
+        <% } %>
+      </tr>
+    </thead>
+    <tbody>
+      <% publishers.forEach(publisher => { %>
         <tr>
-          <th>Publisher Name</th>
-          <th>Address</th>
-          <th>Country</th>
-          <th>Contact</th>
-          <th>Image</th>
-          <% if (user.role === 'admin') { %>
-            <th>Edit</th>
-            <th>Delete</th>
+          <td><a href="/publishers/<%= publisher.publisher_id %>"><%= publisher.publisher_name %></a></td>
+          <td><%= publisher.publisher_address %></td>
+          <td><%= publisher.publisher_country %></td>
+          <td><%= publisher.publisher_contact %></td>
+          <td>
+            <% if (publisher.images) { %>
+              <img src="/images/<%= publisher.images %>" class="publisher-image" alt="Publisher Image" />
+            <% } else { %>
+              <img src="/images/default.jpg" class="publisher-image" alt="No Image" />
+            <% } %>
+          </td>
+          <% if (user && user.role === 'admin') { %>
+            <td>
+              <a href="/updatePublisher/<%= publisher.publisher_id %>" class="btn btn-outline-primary btn-sm">Edit</a>
+            </td>
+            <td>
+              <a href="/deletePublisher/<%= publisher.publisher_id %>" 
+                 onclick="return confirm('Are you sure you want to delete this publisher?')" 
+                 class="btn btn-outline-danger btn-sm">Delete</a>
+            </td>
           <% } %>
         </tr>
-      </thead>
-      <tbody>
-        <% for (let i = 0; i < publishers.length; i++) { %>
-          <tr>
-            <td><a href="/publishers/<%= publishers[i].publisher_id %>"><%= publishers[i].publisher_name %></a></td>
-            <td><%= publishers[i].publisher_address %></td>
-            <td><%= publishers[i].publisher_country %></td>
-            <td><%= publishers[i].publisher_contact %></td>
-            <td>
-              <% if (publishers[i].images) { %> <!--Check if current publisher has image and displays publisher's uploaded image-->
-                <img src="/images/<%= publishers[i].images %>" class="publisher-image" alt="Publisher Image">
-              <% } else { %>
-                <img src="/images/default.jpg" class="publisher-image" alt="No Image"> <!--If no image, display a default image, this makes sure an image is ALWAYS shown for publisher-->
-              <% } %>
-            </td>
-            <% if (user.role === 'admin') { %>
-              <td>
-                <a href="/updatePublisher/<%= publishers[i].publisher_id %>" class="btn btn-outline-primary btn-sm">Edit</a>
-              </td>
-              <td>
-                <a href="/deletePublisher/<%= publishers[i].publisher_id %>" 
-                   onclick="return confirm('Are you sure you want to delete this publisher?')" 
-                   class="btn btn-outline-danger btn-sm">Delete</a>
-              </td>
-            <% } %>
-          </tr>
-        <% } %>
-      </tbody>
-    </table>
-  </div>
+      <% }); %>
+    </tbody>
+  </table>
+</div>
+
 </body>
 </html>

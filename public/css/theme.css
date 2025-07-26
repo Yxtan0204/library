@@ -42,6 +42,13 @@ body::before {
 .navbar .nav-link:hover {
   color: #ffd9a0 !important;
 }
+.navbar-right {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 20px; /* spacing between icons */
+}
+
 
 /* Hero Section */
 .hero {
