@@ -30,32 +30,51 @@
 </head>
 <body>
   <nav class="navbar navbar-expand-sm bg-dark navbar-dark">
-    <div class="container-fluid">
-      <a class="navbar-brand" href="/publishers">Publisher Page</a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#collapsibleNavbar">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      <div class="collapse navbar-collapse" id="collapsibleNavbar">
-        <ul class="navbar-nav">
-      <% if (user.role === "admin") { %>
+  <div class="container-fluid">
+    <a class="navbar-brand" href="/publishers">Publisher Page</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#collapsibleNavbar">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="collapsibleNavbar">
+      <!-- LEFT SIDE NAV -->
+      <ul class="navbar-nav">
+        <% if (user.role === "admin") { %>
+          <li class="nav-item">
+            <a class="nav-link" href="/addPublisher">Add new Publisher</a>
+          </li> 
+        <% } %>
         <li class="nav-item">
-          <a class="nav-link" href="/addPublisher">Add new Publisher</a>
+          <a class="nav-link" href="/Library">Back to Library Catalog</a>
         </li> 
-      <% } %>
-      <li class="nav-item">
-        <a class="nav-link" href="/Library">Back to Library Catalog</a>
-      </li> 
       </ul>
-      <ul class = "navbar-nav ms-auto">
-         <li class="nav-item">
-        <a class="nav-link" href="/logout">Logout</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/profile">Profile</a>
-        </li>
+
+      <!-- RIGHT SIDE NAV -->
+      <ul class="navbar-nav ms-auto d-flex align-items-center">
+        <% if (user) { %>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              <i class="bi bi-person-circle fs-4"></i>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+              <li><span class="dropdown-item-text fw-bold"><%= user.username || user.name %></span></li>
+              <li><span class="dropdown-item-text text-muted"><%= user.email %></span></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="/profile">Profile</a></li>
+              <li><a class="dropdown-item" href="/borrowed-books">Borrowed Books</a></li>
+              <li><a class="dropdown-item text-danger" href="/logout">Logout</a></li>
+            </ul>
+          </li>
+        <% } else { %>
+          <li class="nav-item">
+            <a class="nav-link" href="/login">Login</a>
+          </li>
+        <% } %>
       </ul>
+    </div>
   </div>
 </nav>
+
 
 <!-- Page Title -->
 <div class="text-center mt-4">
