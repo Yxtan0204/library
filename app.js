@@ -44,6 +44,13 @@ app.use(session({
 }));
 app.use(flash());
 
+app.use((req, res, next) => {
+  res.locals.user = req.session.user || null;
+  res.locals.cartCount = req.session.cart ? req.session.cart.length : 0;
+  next();
+});
+
+
 // To check if user is logged in
 const checkAuthenticated = (req, res, next) => {
     if (req.session.user) return next();
@@ -140,8 +147,19 @@ app.post('/login', (req, res) => {
             req.flash('error', 'Invalid email or password.');
             res.redirect('/login');
         }
+        req.session.user = {
+            id: results[0].id,
+            username: results[0].username,
+            email: results[0].email,
+            contact: results[0].contact,
+            role: results[0].role
+        };
     });
 });
+app.get('/profile', checkAuthenticated, (req, res) => {
+  res.render('profile', { user: req.session.user });
+});
+
 // logout route
 app.get('/logout', (req, res) => {
     req.flash('success', 'You have been logged out.');
