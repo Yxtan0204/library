@@ -37,20 +37,22 @@
       </button>
       <div class="collapse navbar-collapse" id="collapsibleNavbar">
         <ul class="navbar-nav">
-          <% if (user.role === "admin") { %>
-            <li class="nav-item">
-              <a class="nav-link" href="/addPublisher">Add new Publisher</a>
-            </li> 
-          <% } %>
-          <li class="nav-item">
-            <a class="nav-link" href="/Library">Back to Home</a>
-          </li> 
-           <li class="nav-item">
-            <a class="nav-link" href="/logout">Logout</a>
-          </li>
-        <% } %>
+      <% if (user.role === "admin") { %>
+        <li class="nav-item">
+          <a class="nav-link" href="/addPublisher">Add new Publisher</a>
+        </li> 
+      <% } %>
+      <li class="nav-item">
+        <a class="nav-link" href="/Library">Back to Library Catalog</a>
+      </li> 
+      <ul class = "navbar-nav ms-auto">
+         <li class="nav-item">
+        <a class="nav-link" href="/logout">Logout</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/profile">Profile</a>
+        </li>
       </ul>
-    </div>
   </div>
 </nav>
 
