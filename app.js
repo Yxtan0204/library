@@ -857,7 +857,7 @@ app.get("/loans/:id/edit", checkAuthenticated, async (req, res) => {
   }
 });
 
-module.exports = router;
+
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
