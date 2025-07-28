@@ -182,7 +182,6 @@ app.get('/profile', checkAuthenticated, (req, res) => {
 });
 //Update Profile
 app.get('/updateProfile', checkAuthenticated, (req, res) => {
-  res.render('updateProfile', { user: req.session.user });
 });
 
 // ROUTES FOR BOOKS TABLE
