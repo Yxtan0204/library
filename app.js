@@ -180,8 +180,36 @@ app.post('/forgot-password', (req, res) => {
 app.get('/profile', checkAuthenticated, (req, res) => {
   res.render('profile', { user: req.session.user });
 });
+
 //Update Profile
 app.get('/updateProfile', checkAuthenticated, (req, res) => {
+  const userData = req.session.user; // or fetch from DB by user ID
+  res.render('updateProfile', {
+    formData: userData,
+    message: req.query.message || null
+  });
+});
+
+app.post('/updateProfile', checkAuthenticated, (req, res) => {
+  const { username, email, contact } = req.body;
+  const userId = req.session.user.id; // from session
+
+  const sql = 'UPDATE users SET username = ?, email = ?, contact = ? WHERE id = ?';
+
+  pool.query(sql, [username, email, contact, userId], (err, results) => {
+    if (err) {
+      console.error('Update error:', err);
+      return res.status(500).send('Failed to update profile.');
+    }
+
+    // Update session values too
+    req.session.user.username = username;
+    req.session.user.email = email;
+    req.session.user.contact = contact;
+
+    // Redirect back to form with success message
+    res.redirect('/updateProfile?message=Profile updated successfully!');
+  });
 });
 
 // ROUTES FOR BOOKS TABLE
