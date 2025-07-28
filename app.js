@@ -248,12 +248,12 @@ app.get('/updateProfile', checkAuthenticated, (req, res) => {
 });
 
 app.post('/updateProfile', checkAuthenticated, (req, res) => {
-  const { username, email, contact } = req.body;
+  const { username, contact } = req.body;
   const userId = req.session.user.id; // from session
 
-  const sql = 'UPDATE users SET username = ?, email = ?, contact = ? WHERE id = ?';
+  const sql = 'UPDATE users SET username = ?, contact = ? WHERE id = ?';
 
-  pool.query(sql, [username, email, contact, userId], (err, results) => {
+  pool.query(sql, [username, contact, userId], (err, results) => {
     if (err) {
       console.error('Update error:', err);
       return res.status(500).send('Failed to update profile.');
@@ -261,7 +261,6 @@ app.post('/updateProfile', checkAuthenticated, (req, res) => {
 
     // Update session values too
     req.session.user.username = username;
-    req.session.user.email = email;
     req.session.user.contact = contact;
 
     // Redirect back to profile
