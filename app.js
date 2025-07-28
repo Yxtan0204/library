@@ -78,7 +78,7 @@ app.get('/', checkAuthenticated, (req, res) => {
         GROUP BY u.username, return_month;
     `;
 
-    mysql.query(query, [userId], (err, results) => {
+    pool.query(query, [userId], (err, results) => {
         if (err) {
             console.error("DB Error:", err);
             return res.status(500).send("Server error");
@@ -136,19 +136,39 @@ app.get('/register', (req, res) => {
 
 //validate registration
 app.post('/register', validateRegistration, (req, res) => {
-    const { username, email, password, contact, role } = req.body;
-    const sql = 'INSERT INTO users (username, email, password, contact, role) VALUES (?, ?, SHA1(?), ?, ?)';
-    
-    pool.query(sql, [username, email, password, contact, role], (err, result) => {
-        if (err) {
-            console.error('Registration error:', err);
-            req.flash('error', 'Database error');
-            return res.redirect('register');
-        }
+  const { username, email, password, contact, role } = req.body;
 
-        req.flash('success', 'Registration successful! Please log in.');
-        res.redirect('/login');
+  // Step 1: Check if email already exists
+  const checkEmailSQL = 'SELECT * FROM users WHERE email = ?';
+  pool.query(checkEmailSQL, [email], (err, results) => {
+    if (err) {
+      console.error('Email check error:', err);
+      req.flash('error', 'Database error during email check.');
+      req.flash('formData', req.body);
+      return res.redirect('/register');
+    }
+
+    if (results.length > 0) {
+      // Email already exists
+      req.flash('error', 'Email already registered. Please use another.');
+      req.flash('formData', req.body);
+      return res.redirect('/register');
+    }
+
+    // Step 2: Insert user if email is unique
+    const insertSQL = 'INSERT INTO users (username, email, password, contact, role) VALUES (?, ?, SHA1(?), ?, ?)';
+    pool.query(insertSQL, [username, email, password, contact, role], (err, result) => {
+      if (err) {
+        console.error('Registration error:', err);
+        req.flash('error', 'Database error during registration.');
+        req.flash('formData', req.body);
+        return res.redirect('/register');
+      }
+
+      req.flash('success', 'Registration successful! Please log in.');
+      res.redirect('/login');
     });
+  });
 });
 
 // get login 
@@ -228,12 +248,12 @@ app.get('/updateProfile', checkAuthenticated, (req, res) => {
 });
 
 app.post('/updateProfile', checkAuthenticated, (req, res) => {
-  const { username, email, contact } = req.body;
+  const { username, contact } = req.body;
   const userId = req.session.user.id; // from session
 
-  const sql = 'UPDATE users SET username = ?, email = ?, contact = ? WHERE id = ?';
+  const sql = 'UPDATE users SET username = ?, contact = ? WHERE id = ?';
 
-  pool.query(sql, [username, email, contact, userId], (err, results) => {
+  pool.query(sql, [username, contact, userId], (err, results) => {
     if (err) {
       console.error('Update error:', err);
       return res.status(500).send('Failed to update profile.');
@@ -241,7 +261,6 @@ app.post('/updateProfile', checkAuthenticated, (req, res) => {
 
     // Update session values too
     req.session.user.username = username;
-    req.session.user.email = email;
     req.session.user.contact = contact;
 
     // Redirect back to profile
@@ -569,9 +588,10 @@ app.post('/checkout', async (req, res) => {
       // Create loan record
       console.log('Creating loan record for book:', item.bookId);
       await db.query(
-        'INSERT INTO loans (userId, bookId, loan_date, due_date) VALUES (?, ?, ?, ?)',
-        [userId, item.bookId, loanDate, dueDate]
+        'INSERT INTO book_loans (loan_id, user_id, book_id, borrow_date, due_date, return_date) VALUES (?, ?, ?, ?, ?, ?)',
+        [null, userId, item.bookId, loanDate, dueDate, null]
       );
+
 
       // Update book quantity
       await db.query('UPDATE books SET quantity = quantity - 1 WHERE bookId = ?', [item.bookId]);
@@ -766,57 +786,65 @@ app.get('/loans/return/:id', checkAuthenticated, async (req, res) => {
 });
 
 app.get("/loans", checkAuthenticated, (req, res) => {
-    let sql, params;
-    
-    // Debug log
-    console.log('Current user:', req.session.user);
-    
-    if (req.session.user.role === 'admin') {
-        sql = `
-            SELECT 
-                loans.loanId,
-                loans.dateRequested as loan_date,
-                books.title,
-                books.author,
-                users.username,
-                books.bookId,
-                users.id as userId
-            FROM loans
-            JOIN books ON loans.bookId = books.bookId
-            JOIN users ON loans.userId = users.id
-            ORDER BY loans.dateRequested DESC
-        `;
-        params = [];
-    } else {
-        sql = `
-            SELECT 
-                loans.loanId,
-                loans.dateRequested as loan_date,
-                books.title,
-                books.author,
-                books.bookId
-            FROM loans
-            JOIN books ON loans.bookId = books.bookId
-            WHERE loans.userId = ?
-            ORDER BY loans.dateRequested DESC
-        `;
-        params = [req.session.user.id];
-    }
+  const db = pool.promise();
+  const user = req.session.user;
+  let sql, params;
 
-    // Debug log
-    console.log('SQL Query:', sql);
-    console.log('Parameters:', params);
+  if (user.role === 'admin') {
+    sql = `
+      SELECT 
+        book_loans.loan_id,
+        book_loans.borrow_date,
+        book_loans.due_date,
+        book_loans.return_date,
+        books.title,
+        books.author,
+        books.bookId,
+        users.username,
+        users.id as userId
+      FROM book_loans
+      JOIN books ON book_loans.book_id = books.bookId
+      JOIN users ON book_loans.user_id = users.id
+      ORDER BY book_loans.borrow_date DESC
+    `;
+    params = [];
+  } else {
+    sql = `
+      SELECT 
+        book_loans.loan_id,
+        book_loans.borrow_date,
+        book_loans.due_date,
+        book_loans.return_date,
+        books.title,
+        books.author,
+        books.bookId
+      FROM book_loans
+      JOIN books ON book_loans.book_id = books.bookId
+      WHERE book_loans.user_id = ?
+      ORDER BY book_loans.borrow_date DESC
+    `;
+    params = [user.id];
+  }
 
-    pool.query(sql, params, (error, results) => {
-        if (error) {
-            console.error("Error fetching loans:", error);
-            console.error("Detailed error:", error.message);
-            return res.status(500).send('Error fetching loans: ' + error.message);
-        }
-        console.log('Query results:', results);
-        res.render("loansMainPage", { loans: results, user: req.session.user });
+  db.query(sql, params)
+    .then(([results]) => {
+      // Convert Date objects to 'YYYY-MM-DD' strings
+      const loans = results.map(loan => ({
+        ...loan,
+        borrow_date: loan.borrow_date ? loan.borrow_date.toISOString().slice(0, 10) : null,
+        due_date: loan.due_date ? loan.due_date.toISOString().slice(0, 10) : null,
+        return_date: loan.return_date ? loan.return_date.toISOString().slice(0, 10) : null
+      }));
+
+      res.render("loansMainPage", { loans, user });
+    })
+    .catch(error => {
+      console.error("Error fetching loans:", error);
+      res.status(500).send('Error fetching loans: ' + error.message);
     });
 });
+
+
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
