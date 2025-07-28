@@ -287,7 +287,7 @@ app.post('/addUser', checkAuthenticated, checkAdmin, (req, res) => {
   });
 });
 
-app.get('/editUser/:id', checkAuthenticated, checkAdmin, (req, res) => {
+app.get('/updateUser/:id', checkAuthenticated, checkAdmin, (req, res) => {
   const userId = req.params.id;
   const sql = 'SELECT * FROM users WHERE id = ?';
 
@@ -305,7 +305,7 @@ app.get('/editUser/:id', checkAuthenticated, checkAdmin, (req, res) => {
   });
 });
 
-app.post('/editUser/:id', checkAuthenticated, checkAdmin, (req, res) => {
+app.post('/updateUser/:id', checkAuthenticated, checkAdmin, (req, res) => {
   const userId = req.params.id;
   const { username, email, contact, role } = req.body;
 
