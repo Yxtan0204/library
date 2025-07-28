@@ -78,7 +78,7 @@ app.get('/', checkAuthenticated, (req, res) => {
         GROUP BY u.username, return_month;
     `;
 
-    db.query(query, [userId], (err, results) => {
+    mysql.query(query, [userId], (err, results) => {
         if (err) {
             console.error("DB Error:", err);
             return res.status(500).send("Server error");
