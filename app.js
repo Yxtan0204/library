@@ -265,7 +265,7 @@ app.get('/addUser', checkAuthenticated, checkAdmin, (req, res) => {
   res.render('addUser');
 });
 
-app.post('/admin/add-user', checkAuthenticated, checkAdmin, (req, res) => {
+app.post('/addUser', checkAuthenticated, checkAdmin, (req, res) => {
   const { username, email, password, contact, role } = req.body;
 
   if (!username || !email || !password || !contact || !role) {
