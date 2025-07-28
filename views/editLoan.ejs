@@ -1,0 +1,8 @@
+<h2>Edit Loan</h2>
+<form method="POST" action="/loans/edit/<%= loan.loan_id %>">
+  <input type="text" name="title" value="<%= loan.title %>" required class="form-control mb-2" />
+  <input type="text" name="author" value="<%= loan.author %>" required class="form-control mb-2" />
+  <input type="date" name="borrow_date" value="<%= loan.borrow_date %>" class="form-control mb-2" />
+  <input type="date" name="due_date" value="<%= loan.due_date %>" class="form-control mb-2" />
+  <button type="submit" class="btn btn-primary">Update Loan</button>
+</form>

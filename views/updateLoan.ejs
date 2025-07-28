@@ -1,0 +1,5 @@
+<h2>Update Return Date</h2>
+<form method="POST" action="/loans/update/<%= loan.loan_id %>">
+  <input type="date" name="return_date" value="<%= loan.return_date || '' %>" required class="form-control mb-2" />
+  <button type="submit" class="btn btn-secondary">Update Return</button>
+</form>
