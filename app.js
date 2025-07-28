@@ -78,7 +78,7 @@ app.get('/', checkAuthenticated, (req, res) => {
         GROUP BY u.username, return_month;
     `;
 
-    mysql.query(query, [userId], (err, results) => {
+    pool.query(query, [userId], (err, results) => {
         if (err) {
             console.error("DB Error:", err);
             return res.status(500).send("Server error");
@@ -787,57 +787,56 @@ app.get('/loans/return/:id', checkAuthenticated, async (req, res) => {
 });
 
 app.get("/loans", checkAuthenticated, (req, res) => {
+    const db = pool.promise();
+    const user = req.session.user;
     let sql, params;
-    
-    // Debug log
-    console.log('Current user:', req.session.user);
-    
-    if (req.session.user.role === 'admin') {
+
+    if (user.role === 'admin') {
         sql = `
             SELECT 
-                loans.loanId,
-                loans.dateRequested as loan_date,
+                book_loans.loan_id,
+                book_loans.borrow_date,
+                book_loans.due_date,
+                book_loans.return_date,
                 books.title,
                 books.author,
-                users.username,
                 books.bookId,
+                users.username,
                 users.id as userId
-            FROM loans
-            JOIN books ON loans.bookId = books.bookId
-            JOIN users ON loans.userId = users.id
-            ORDER BY loans.dateRequested DESC
+            FROM book_loans
+            JOIN books ON book_loans.book_id = books.bookId
+            JOIN users ON book_loans.user_id = users.id
+            ORDER BY book_loans.borrow_date DESC
         `;
         params = [];
     } else {
         sql = `
             SELECT 
-                loans.loanId,
-                loans.dateRequested as loan_date,
+                book_loans.loan_id,
+                book_loans.borrow_date,
+                book_loans.due_date,
+                book_loans.return_date,
                 books.title,
                 books.author,
                 books.bookId
-            FROM loans
-            JOIN books ON loans.bookId = books.bookId
-            WHERE loans.userId = ?
-            ORDER BY loans.dateRequested DESC
+            FROM book_loans
+            JOIN books ON book_loans.book_id = books.bookId
+            WHERE book_loans.user_id = ?
+            ORDER BY book_loans.borrow_date DESC
         `;
-        params = [req.session.user.id];
+        params = [user.id];
     }
 
-    // Debug log
-    console.log('SQL Query:', sql);
-    console.log('Parameters:', params);
-
-    pool.query(sql, params, (error, results) => {
-        if (error) {
-            console.error("Error fetching loans:", error);
-            console.error("Detailed error:", error.message);
-            return res.status(500).send('Error fetching loans: ' + error.message);
-        }
-        console.log('Query results:', results);
-        res.render("loansMainPage", { loans: results, user: req.session.user });
-    });
+    db.query(sql, params)
+      .then(([results]) => {
+        res.render("loansMainPage", { loans: results, user });
+      })
+      .catch(error => {
+        console.error("Error fetching loans:", error);
+        res.status(500).send('Error fetching loans: ' + error.message);
+      });
 });
+
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
