@@ -20,7 +20,7 @@
       <li class="list-group-item"><strong>Role:</strong> <%= user.role %></li>
     </ul>
 
-    <form action="/admin/delete-user/<%= user.id %>" method="POST">
+    <form action="/deleteUser/<%= user.id %>" method="POST">
       <button type="submit" class="btn btn-danger">Yes, Delete User</button>
       <a href="/user" class="btn btn-secondary ms-2">Cancel</a>
     </form>
