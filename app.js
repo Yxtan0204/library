@@ -569,9 +569,10 @@ app.post('/checkout', async (req, res) => {
       // Create loan record
       console.log('Creating loan record for book:', item.bookId);
       await db.query(
-        'INSERT INTO loans (userId, bookId, loan_date, due_date) VALUES (?, ?, ?, ?)',
-        [userId, item.bookId, loanDate, dueDate]
+        'INSERT INTO book_loans (loan_id, user_id, book_id, borrow_date, due_date, return_date) VALUES (?, ?, ?, ?, ?, ?)',
+        [null, userId, item.bookId, loanDate, dueDate, null]
       );
+
 
       // Update book quantity
       await db.query('UPDATE books SET quantity = quantity - 1 WHERE bookId = ?', [item.bookId]);
