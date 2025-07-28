@@ -136,19 +136,39 @@ app.get('/register', (req, res) => {
 
 //validate registration
 app.post('/register', validateRegistration, (req, res) => {
-    const { username, email, password, contact, role } = req.body;
-    const sql = 'INSERT INTO users (username, email, password, contact, role) VALUES (?, ?, SHA1(?), ?, ?)';
-    
-    pool.query(sql, [username, email, password, contact, role], (err, result) => {
-        if (err) {
-            console.error('Registration error:', err);
-            req.flash('error', 'Database error');
-            return res.redirect('register');
-        }
+  const { username, email, password, contact, role } = req.body;
 
-        req.flash('success', 'Registration successful! Please log in.');
-        res.redirect('/login');
+  // Step 1: Check if email already exists
+  const checkEmailSQL = 'SELECT * FROM users WHERE email = ?';
+  pool.query(checkEmailSQL, [email], (err, results) => {
+    if (err) {
+      console.error('Email check error:', err);
+      req.flash('error', 'Database error during email check.');
+      req.flash('formData', req.body);
+      return res.redirect('/register');
+    }
+
+    if (results.length > 0) {
+      // Email already exists
+      req.flash('error', 'Email already registered. Please use another.');
+      req.flash('formData', req.body);
+      return res.redirect('/register');
+    }
+
+    // Step 2: Insert user if email is unique
+    const insertSQL = 'INSERT INTO users (username, email, password, contact, role) VALUES (?, ?, SHA1(?), ?, ?)';
+    pool.query(insertSQL, [username, email, password, contact, role], (err, result) => {
+      if (err) {
+        console.error('Registration error:', err);
+        req.flash('error', 'Database error during registration.');
+        req.flash('formData', req.body);
+        return res.redirect('/register');
+      }
+
+      req.flash('success', 'Registration successful! Please log in.');
+      res.redirect('/login');
     });
+  });
 });
 
 // get login 
