@@ -111,6 +111,7 @@ app.post('/register', validateRegistration, (req, res) => {
         res.redirect('/login');
     });
 });
+
 // get login 
 app.get('/login', (req, res) => {
     res.render('login', {
@@ -206,6 +207,105 @@ app.post('/updateProfile', checkAuthenticated, (req, res) => {
 
     // Redirect back to profile
     res.redirect('/profile');
+  });
+});
+
+//User route:
+app.get('/user', checkAuthenticated, checkAdmin, (req, res) => {
+  pool.query('SELECT * FROM users', (err, results) => {
+    if (err) {
+      console.error('Error fetching users:', err);
+      return res.status(500).send('Database error');
+    }
+
+    res.render('user', { users: results });
+  });
+});
+
+app.get('addUser', checkAuthenticated, checkAdmin, (req, res) => {
+  res.render('addUser');
+});
+
+app.post('/admin/add-user', checkAuthenticated, checkAdmin, (req, res) => {
+  const { username, email, password, contact, role } = req.body;
+
+  if (!username || !email || !password || !contact || !role) {
+    return res.status(400).send('All fields are required.');
+  }
+
+  if (password.length < 8) {
+    return res.status(400).send('Password must be at least 8 characters.');
+  }
+
+  const sql = 'INSERT INTO users (username, email, password, contact, role) VALUES (?, ?, SHA1(?), ?, ?)';
+  pool.query(sql, [username, email, password, contact, role], (err, result) => {
+    if (err) {
+      console.error('Error adding user:', err);
+      return res.status(500).send('Database error.');
+    }
+
+    res.redirect('/user');
+  });
+});
+
+app.get('/editUser/:id', checkAuthenticated, checkAdmin, (req, res) => {
+  const userId = req.params.id;
+  const sql = 'SELECT * FROM users WHERE id = ?';
+
+  pool.query(sql, [userId], (err, results) => {
+    if (err) {
+      console.error('Error fetching user for edit:', err);
+      return res.status(500).send('Error retrieving user.');
+    }
+
+    if (results.length > 0) {
+      res.render('editUser', { user: results[0] });
+    } else {
+      res.status(404).send('User not found');
+    }
+  });
+});
+
+app.post('/editUser/:id', checkAuthenticated, checkAdmin, (req, res) => {
+  const userId = req.params.id;
+  const { username, email, contact, role } = req.body;
+
+  const sql = 'UPDATE users SET username = ?, email = ?, contact = ?, role = ? WHERE id = ?';
+  pool.query(sql, [username, email, contact, role, userId], (err, result) => {
+    if (err) {
+      console.error('Error updating user:', err);
+      return res.status(500).send('Failed to update user.');
+    }
+
+    res.redirect('/user');
+  });
+});
+
+app.get('/deleteUser/:id', checkAuthenticated, checkAdmin, (req, res) => {
+  const userId = req.params.id;
+  pool.query('SELECT * FROM users WHERE id = ?', [userId], (err, results) => {
+    if (err) {
+      console.error('Error loading user for delete:', err);
+      return res.status(500).send('Error loading user');
+    }
+
+    if (results.length > 0) {
+      res.render('deleteUser', { user: results[0] });
+    } else {
+      res.status(404).send('User not found');
+    }
+  });
+});
+
+app.post('deleteUser/:id', checkAuthenticated, checkAdmin, (req, res) => {
+  const userId = req.params.id;
+  pool.query('DELETE FROM users WHERE id = ?', [userId], (err) => {
+    if (err) {
+      console.error('Error deleting user:', err);
+      return res.status(500).send('Error deleting user');
+    }
+
+    res.redirect('/user');
   });
 });
 
