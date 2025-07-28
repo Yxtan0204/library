@@ -120,41 +120,38 @@ app.get('/login', (req, res) => {
 });
 // post login 
 app.post('/login', (req, res) => {
-    const { email, password } = req.body;
+  const { email, password } = req.body;
 
-    if (!email || !password) {
-        req.flash('error', 'All fields are required.');
-        return res.redirect('/login');
+  if (!email || !password) {
+    req.flash('error', 'All fields are required.');
+    return res.redirect('/login');
+  }
+
+  const sql = 'SELECT * FROM users WHERE email = ? AND password = SHA1(?)';
+  pool.query(sql, [email, password], (err, results) => {
+    if (err) {
+      console.error('Login error:', err);
+      req.flash('error', 'Database error');
+      return res.redirect('/login');
     }
 
-    const sql = 'SELECT * FROM users WHERE email = ? AND password = SHA1(?)';
-    pool.query(sql, [email, password], (err, results) => {
-        if (err) {
-            console.error('Login error:', err);
-            req.flash('error', 'Database error');
-            return res.redirect('login');
-        }
+    if (results.length > 0) {
+      // Safe to access results[0]
+      req.session.user = {
+        id: results[0].id,
+        username: results[0].username,
+        email: results[0].email,
+        contact: results[0].contact,
+        role: results[0].role
+      };
 
-        if (results.length > 0) {
-            req.session.user = results[0];
-            req.flash('success', 'Login successful!');
-            if (req.session.user.role === 'user') {
-                res.redirect('/library');
-            } else {
-                res.redirect('/library');
-            }
-        } else {
-            req.flash('error', 'Invalid email or password.');
-            res.redirect('/login');
-        }
-        req.session.user = {
-            id: results[0].id,
-            username: results[0].username,
-            email: results[0].email,
-            contact: results[0].contact,
-            role: results[0].role
-        };
-    });
+      req.flash('success', 'Login successful!');
+      res.redirect('/library');
+    } else {
+      req.flash('error', 'Invalid email or password.');
+      res.redirect('/login');
+    }
+  });
 });
 
 // logout route
@@ -207,8 +204,8 @@ app.post('/updateProfile', checkAuthenticated, (req, res) => {
     req.session.user.email = email;
     req.session.user.contact = contact;
 
-    // Redirect back to form with success message
-    res.redirect('/updateProfile?message=Profile updated successfully!');
+    // Redirect back to profile
+    res.redirect('/profile');
   });
 });
 
