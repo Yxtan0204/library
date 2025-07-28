@@ -54,11 +54,15 @@
           <li class="nav-item">
             <a class="nav-link" href="/addBook">Add New Book</a>
           </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/user">Users</a>
+          </li>
         <% } %>
         <li class="nav-item">
           <a class="nav-link" href="/publishers">Publishers</a>
         </li>
       </ul>
+        
 
       <!-- RIGHT SIDE NAV -->
       <ul class="navbar-nav ms-auto d-flex align-items-center">
@@ -77,7 +81,7 @@
               <li><span class="dropdown-item-text text-muted"><%= user.email %></span></li>
               <li><hr class="dropdown-divider"></li>
               <li><a class="dropdown-item" href="/profile">Profile</a></li>
-              <li><a class="dropdown-item" href="/loans">Borrowed Books</a></li>
+              <li><a class="dropdown-item" href="/borrowed-books">Borrowed Books</a></li>
               <li><a class="dropdown-item text-danger" href="/logout">Logout</a></li>
             </ul>
           </li>

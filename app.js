@@ -6,6 +6,13 @@ const multer = require('multer');
 const app = express();
 const finesRoutes = require('./fines/finesRoutes');
 
+function checkAuthenticated(req, res, next) {
+    if (req.session && req.session.user) return next();
+
+    req.flash('error', 'Please log in first.');
+    res.redirect('/login');
+}
+
 
 // Set up multer for file uploads
 const storage = multer.diskStorage({
@@ -52,18 +59,45 @@ app.use((req, res, next) => {
 
 
 // To check if user is logged in
-const checkAuthenticated = (req, res, next) => {
-    if (req.session.user) return next();
-    req.flash('error', 'Please log in to view this resource');
-    res.redirect('/login');
-};
+app.get('/', checkAuthenticated, (req, res) => {
+    const userId = req.session.user.id;
+
+    const query = `
+        SELECT 
+            u.username AS user_name,
+            DATE_FORMAT(l.return_date, '%Y-%m') AS return_month,
+            SUM(
+                CASE
+                    WHEN l.return_date > l.due_date THEN DATEDIFF(l.return_date, l.due_date) * 0.20
+                    ELSE 0
+                END
+            ) AS total_fine
+        FROM loans l
+        JOIN users u ON l.userId = u.id
+        WHERE l.userId = ?
+        GROUP BY u.username, return_month;
+    `;
+
+    mysql.query(query, [userId], (err, results) => {
+        if (err) {
+            console.error("DB Error:", err);
+            return res.status(500).send("Server error");
+        }
+        res.render('fines', { fines: results });
+    });
+});
+
 
 // To check if user is admin
 const checkAdmin = (req, res, next) => {
-    if (req.session.user.role === 'admin') return next();
-    req.flash('error', 'Access denied');
-    res.redirect('/shopping');
+  if (req.session.user && req.session.user.role === 'admin') {
+    return next();
+  }
+  req.flash('error', 'Access denied');
+  res.redirect('/library');
 };
+
+app.use('/fines', checkAuthenticated, finesRoutes);
 
 //  Form validation 
 const validateRegistration = (req, res, next) => {
@@ -81,6 +115,8 @@ const validateRegistration = (req, res, next) => {
     next();
 };
 
+
+
 // homepage route
 app.get('/', (req, res) => {
     res.render('homepage', {
@@ -95,6 +131,9 @@ app.get('/register', (req, res) => {
         formData: req.flash('formData')[0]
     });
 });
+
+
+
 //validate registration
 app.post('/register', validateRegistration, (req, res) => {
     const { username, email, password, contact, role } = req.body;
@@ -111,6 +150,7 @@ app.post('/register', validateRegistration, (req, res) => {
         res.redirect('/login');
     });
 });
+
 // get login 
 app.get('/login', (req, res) => {
     res.render('login', {
@@ -120,41 +160,38 @@ app.get('/login', (req, res) => {
 });
 // post login 
 app.post('/login', (req, res) => {
-    const { email, password } = req.body;
+  const { email, password } = req.body;
 
-    if (!email || !password) {
-        req.flash('error', 'All fields are required.');
-        return res.redirect('/login');
+  if (!email || !password) {
+    req.flash('error', 'All fields are required.');
+    return res.redirect('/login');
+  }
+
+  const sql = 'SELECT * FROM users WHERE email = ? AND password = SHA1(?)';
+  pool.query(sql, [email, password], (err, results) => {
+    if (err) {
+      console.error('Login error:', err);
+      req.flash('error', 'Database error');
+      return res.redirect('/login');
     }
 
-    const sql = 'SELECT * FROM users WHERE email = ? AND password = SHA1(?)';
-    pool.query(sql, [email, password], (err, results) => {
-        if (err) {
-            console.error('Login error:', err);
-            req.flash('error', 'Database error');
-            return res.redirect('login');
-        }
+    if (results.length > 0) {
+      // Safe to access results[0]
+      req.session.user = {
+        id: results[0].id,
+        username: results[0].username,
+        email: results[0].email,
+        contact: results[0].contact,
+        role: results[0].role
+      };
 
-        if (results.length > 0) {
-            req.session.user = results[0];
-            req.flash('success', 'Login successful!');
-            if (req.session.user.role === 'user') {
-                res.redirect('/library');
-            } else {
-                res.redirect('/library');
-            }
-        } else {
-            req.flash('error', 'Invalid email or password.');
-            res.redirect('/login');
-        }
-        req.session.user = {
-            id: results[0].id,
-            username: results[0].username,
-            email: results[0].email,
-            contact: results[0].contact,
-            role: results[0].role
-        };
-    });
+      req.flash('success', 'Login successful!');
+      res.redirect('/library');
+    } else {
+      req.flash('error', 'Invalid email or password.');
+      res.redirect('/login');
+    }
+  });
 });
 
 // logout route
@@ -180,9 +217,135 @@ app.post('/forgot-password', (req, res) => {
 app.get('/profile', checkAuthenticated, (req, res) => {
   res.render('profile', { user: req.session.user });
 });
+
 //Update Profile
 app.get('/updateProfile', checkAuthenticated, (req, res) => {
-  res.render('profile', { user: req.session.user });
+  const userData = req.session.user; // or fetch from DB by user ID
+  res.render('updateProfile', {
+    formData: userData,
+    message: req.query.message || null
+  });
+});
+
+app.post('/updateProfile', checkAuthenticated, (req, res) => {
+  const { username, email, contact } = req.body;
+  const userId = req.session.user.id; // from session
+
+  const sql = 'UPDATE users SET username = ?, email = ?, contact = ? WHERE id = ?';
+
+  pool.query(sql, [username, email, contact, userId], (err, results) => {
+    if (err) {
+      console.error('Update error:', err);
+      return res.status(500).send('Failed to update profile.');
+    }
+
+    // Update session values too
+    req.session.user.username = username;
+    req.session.user.email = email;
+    req.session.user.contact = contact;
+
+    // Redirect back to profile
+    res.redirect('/profile');
+  });
+});
+
+//User route:
+app.get('/user', checkAuthenticated, checkAdmin, (req, res) => {
+  pool.query('SELECT * FROM users', (err, results) => {
+    if (err) {
+      console.error('Error fetching users:', err);
+      return res.status(500).send('Database error');
+    }
+
+    res.render('user', { users: results, user: req.session.user });
+  });
+});
+
+app.get('/addUser', checkAuthenticated, checkAdmin, (req, res) => {
+  res.render('addUser');
+});
+
+app.post('/addUser', checkAuthenticated, checkAdmin, (req, res) => {
+  const { username, email, password, contact, role } = req.body;
+
+  if (!username || !email || !password || !contact || !role) {
+    return res.status(400).send('All fields are required.');
+  }
+
+  if (password.length < 8) {
+    return res.status(400).send('Password must be at least 8 characters.');
+  }
+
+  const sql = 'INSERT INTO users (username, email, password, contact, role) VALUES (?, ?, SHA1(?), ?, ?)';
+  pool.query(sql, [username, email, password, contact, role], (err, result) => {
+    if (err) {
+      console.error('Error adding user:', err);
+      return res.status(500).send('Database error.');
+    }
+
+    res.redirect('/user');
+  });
+});
+
+app.get('/updateUser/:id', checkAuthenticated, checkAdmin, (req, res) => {
+  const userId = req.params.id;
+  const sql = 'SELECT * FROM users WHERE id = ?';
+
+  pool.query(sql, [userId], (err, results) => {
+    if (err) {
+      console.error('Error fetching user for edit:', err);
+      return res.status(500).send('Error retrieving user.');
+    }
+
+    if (results.length > 0) {
+      res.render('updateUser', { user: results[0] });
+    } else {
+      res.status(404).send('User not found');
+    }
+  });
+});
+
+app.post('/updateUser/:id', checkAuthenticated, checkAdmin, (req, res) => {
+  const userId = req.params.id;
+  const { username, email, contact, role } = req.body;
+
+  const sql = 'UPDATE users SET username = ?, email = ?, contact = ?, role = ? WHERE id = ?';
+  pool.query(sql, [username, email, contact, role, userId], (err, result) => {
+    if (err) {
+      console.error('Error updating user:', err);
+      return res.status(500).send('Failed to update user.');
+    }
+
+    res.redirect('/user');
+  });
+});
+
+app.get('/deleteUser/:id', checkAuthenticated, checkAdmin, (req, res) => {
+  const userId = req.params.id;
+  pool.query('SELECT * FROM users WHERE id = ?', [userId], (err, results) => {
+    if (err) {
+      console.error('Error loading user for delete:', err);
+      return res.status(500).send('Error loading user');
+    }
+
+    if (results.length > 0) {
+      res.render('deleteUser', { user: results[0] });
+    } else {
+      res.status(404).send('User not found');
+    }
+  });
+});
+
+app.post('/deleteUser/:id', checkAuthenticated, checkAdmin, (req, res) => {
+  const userId = req.params.id;
+  pool.query('DELETE FROM users WHERE id = ?', [userId], (err) => {
+    if (err) {
+      console.error('Error deleting user:', err);
+      return res.status(500).send('Error deleting user');
+    }
+
+    res.redirect('/user');
+  });
 });
 
 // ROUTES FOR BOOKS TABLE
