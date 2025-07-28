@@ -6,6 +6,13 @@ const multer = require('multer');
 const app = express();
 const finesRoutes = require('./fines/finesRoutes');
 
+function checkAuthenticated(req, res, next) {
+    if (req.session && req.session.user) return next();
+
+    req.flash('error', 'Please log in first.');
+    res.redirect('/login');
+}
+
 
 // Set up multer for file uploads
 const storage = multer.diskStorage({
@@ -52,11 +59,34 @@ app.use((req, res, next) => {
 
 
 // To check if user is logged in
-const checkAuthenticated = (req, res, next) => {
-    if (req.session.user) return next();
-    req.flash('error', 'Please log in to view this resource');
-    res.redirect('/login');
-};
+app.get('/', checkAuthenticated, (req, res) => {
+    const userId = req.session.user.id;
+
+    const query = `
+        SELECT 
+            u.username AS user_name,
+            DATE_FORMAT(l.return_date, '%Y-%m') AS return_month,
+            SUM(
+                CASE
+                    WHEN l.return_date > l.due_date THEN DATEDIFF(l.return_date, l.due_date) * 0.20
+                    ELSE 0
+                END
+            ) AS total_fine
+        FROM loans l
+        JOIN users u ON l.userId = u.id
+        WHERE l.userId = ?
+        GROUP BY u.username, return_month;
+    `;
+
+    db.query(query, [userId], (err, results) => {
+        if (err) {
+            console.error("DB Error:", err);
+            return res.status(500).send("Server error");
+        }
+        res.render('fines', { fines: results });
+    });
+});
+
 
 // To check if user is admin
 const checkAdmin = (req, res, next) => {
@@ -66,6 +96,8 @@ const checkAdmin = (req, res, next) => {
   req.flash('error', 'Access denied');
   res.redirect('/library');
 };
+
+app.use('/fines', checkAuthenticated, finesRoutes);
 
 //  Form validation 
 const validateRegistration = (req, res, next) => {
@@ -83,6 +115,8 @@ const validateRegistration = (req, res, next) => {
     next();
 };
 
+
+
 // homepage route
 app.get('/', (req, res) => {
     res.render('homepage', {
@@ -97,6 +131,9 @@ app.get('/register', (req, res) => {
         formData: req.flash('formData')[0]
     });
 });
+
+
+
 //validate registration
 app.post('/register', validateRegistration, (req, res) => {
     const { username, email, password, contact, role } = req.body;
