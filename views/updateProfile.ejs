@@ -19,19 +19,26 @@
   </div>
 </nav>
 
-<div class="container mt-5">
-  <div class="card mx-auto shadow-sm" style="max-width: 500px;">
-    <div class="card-body">
-      <h4 class="card-title mb-4 text-center">User Profile</h4>
-      <p><strong>Username:</strong> <%= user.username %></p>
-      <p><strong>Email:</strong> <%= user.email %></p>
-      <p><strong>Contact:</strong> <%= user.contact %></p>
-      <div class="text-center mt-4">
-        <a href="/updateProfile" class = "btn btn-primary">Update Profile</a>
-        <a href="/library" class="btn btn-primary">Back to Library</a>
-      </div>
-    </div>
-  </div>
+<div>
+    <form action="/register" method="POST" class="mt-4">
+        <div class="form-group">
+            <label for="username">Username:</label>
+            <input type="text" id="username" name="username" class="form-control" required 
+            <% if (formData && formData.username) { %> value="<%= formData.username %>" <% } else { %> value="" <% } %>>
+        </div>
+        <div class="form-group">
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" class="form-control" required 
+            <% if (formData && formData.email) { %> value="<%= formData.email %>" <% } else { %> value="" <% } %>>
+        </div>
+        <div class="form-group">
+            <label for="contact">Contact Number:</label>
+            <input type="text" id="contact" name="contact" class="form-control" required 
+            <% if (formData && formData.contact) { %> value="<%= formData.contact %>" <% } else { %> value="" <% } %>>
+        </div>
+        <br>
+        <button type="submit" class="btn btn-primary">Register</button>
+    </form>
 </div>
 
 </body>
