@@ -58,18 +58,21 @@ A full-stack Library Management Web App designed for administrators and users to
 ```sql
 -- Book Table
 CREATE TABLE books (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  title VARCHAR(255) NOT NULL,
-  author VARCHAR(255) NOT NULL,
-  year INT,
-  image VARCHAR(255)
+  bookId INT AUTO_INCREMENT PRIMARY KEY,
+  title VARCHAR(255),
+  author VARCHAR(255),
+  genre VARCHAR(100),
+  quantity INT,
+  coverImage VARCHAR(255)
 );
+
 
 -- Publisher Table
 CREATE TABLE publishers (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(255) NOT NULL,
-  contact VARCHAR(100),
+  publisher_id INT AUTO_INCREMENT PRIMARY KEY,
+  publisher_name VARCHAR(255) NOT NULL,
+  publisher_contact VARCHAR(100),
+  publisher_country VARCHAR(100),
   address TEXT
 );
 
@@ -80,14 +83,6 @@ CREATE TABLE users (
   email VARCHAR(255) UNIQUE NOT NULL,
   password VARCHAR(255) NOT NULL,
   role ENUM('user', 'admin') DEFAULT 'user'
-);
-
--- Borrow Cart (optional)
-CREATE TABLE cart (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  user_id INT,
-  book_id INT,
-  borrow_date DATE
 );
 
 -- Fines Table (optional)
@@ -103,8 +98,7 @@ library-app/
 ├── app.js                  # Main Express app
 ├── package.json
 ├── public/
-│   └── images/             # Default image and static assets
-├── uploads/                # Uploaded book images
+│   └── images/             # Default image and static assets      
 ├── views/                  # EJS views
 │   ├── addBook.ejs
 │   ├── addPublisher.ejs
