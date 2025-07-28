@@ -60,9 +60,11 @@ const checkAuthenticated = (req, res, next) => {
 
 // To check if user is admin
 const checkAdmin = (req, res, next) => {
-    if (req.session.user.role === 'admin') return next();
-    req.flash('error', 'Access denied');
-    res.redirect('/shopping');
+  if (req.session.user && req.session.user.role === 'admin') {
+    return next();
+  }
+  req.flash('error', 'Access denied');
+  res.redirect('/library');
 };
 
 //  Form validation 
@@ -218,7 +220,7 @@ app.get('/user', checkAuthenticated, checkAdmin, (req, res) => {
       return res.status(500).send('Database error');
     }
 
-    res.render('user', { users: results });
+    res.render('user', { users: results, user: req.session.user });
   });
 });
 
