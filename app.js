@@ -336,7 +336,7 @@ app.get('/deleteUser/:id', checkAuthenticated, checkAdmin, (req, res) => {
   });
 });
 
-app.post('deleteUser/:id', checkAuthenticated, checkAdmin, (req, res) => {
+app.post('/deleteUser/:id', checkAuthenticated, checkAdmin, (req, res) => {
   const userId = req.params.id;
   pool.query('DELETE FROM users WHERE id = ?', [userId], (err) => {
     if (err) {
