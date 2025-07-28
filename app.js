@@ -72,9 +72,9 @@ app.get('/', checkAuthenticated, (req, res) => {
                     ELSE 0
                 END
             ) AS total_fine
-        FROM loans l
-        JOIN users u ON l.userId = u.id
-        WHERE l.userId = ?
+        FROM book_loans l
+        JOIN users u ON l.user_id = u.id
+        WHERE l.user_id = ?
         GROUP BY u.username, return_month;
     `;
 
@@ -752,38 +752,40 @@ app.get('/deletePublisher/:id', checkAuthenticated, checkAdmin, (req,res) => {
 
 // Return a book
 app.get('/loans/return/:id', checkAuthenticated, async (req, res) => {
-    const loanId = req.params.id;
-    try {
-        const db = pool.promise();
-        
-        // Get the loan record to check if it exists and hasn't been returned
-        const [[loan]] = await db.query(
-            'SELECT * FROM loans WHERE loanId = ? AND userId = ? AND returnDate IS NULL',
-            [loanId, req.session.user.id]
-        );
+  const loanId = req.params.id;
 
-        if (!loan) {
-            return res.status(404).send('Loan not found or already returned');
-        }
+  try {
+    const db = pool.promise();
 
-        // Update the loan record with return date
-        await db.query(
-            'UPDATE loans SET returnDate = NOW() WHERE loanId = ?',
-            [loanId]
-        );
+    // Check for valid active loan belonging to the user
+    const [[loan]] = await db.query(
+      'SELECT * FROM book_loans WHERE loan_id = ? AND user_id = ? AND return_date IS NULL',
+      [loanId, req.session.user.id]
+    );
 
-        // Increment the book quantity
-        await db.query(
-            'UPDATE books SET quantity = quantity + 1 WHERE bookId = ?',
-            [loan.bookId]
-        );
-
-        res.redirect('/loans');
-    } catch (error) {
-        console.error('Error returning book:', error);
-        res.status(500).send('Error returning book');
+    if (!loan) {
+      return res.status(404).send('Loan not found or already returned');
     }
+
+    // Set return_date to NOW()
+    await db.query(
+      'UPDATE book_loans SET return_date = NOW() WHERE loan_id = ?',
+      [loanId]
+    );
+
+    // Increment the book quantity using correct column name
+    await db.query(
+      'UPDATE books SET quantity = quantity + 1 WHERE bookId = ?',
+      [loan.book_id]  // <- FIXED HERE
+    );
+
+    res.redirect('/loans');
+  } catch (error) {
+    console.error('Error returning book:', error);
+    res.status(500).send('Error returning book');
+  }
 });
+
 
 app.get("/loans", checkAuthenticated, (req, res) => {
   const db = pool.promise();
