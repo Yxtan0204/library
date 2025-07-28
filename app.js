@@ -261,7 +261,7 @@ app.get('/user', checkAuthenticated, checkAdmin, (req, res) => {
   });
 });
 
-app.get('addUser', checkAuthenticated, checkAdmin, (req, res) => {
+app.get('/addUser', checkAuthenticated, checkAdmin, (req, res) => {
   res.render('addUser');
 });
 
