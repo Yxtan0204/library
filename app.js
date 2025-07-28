@@ -379,20 +379,39 @@ app.get('/cart/remove/:id', checkAuthenticated, (req, res) => {
 
 app.post('/checkout', async (req, res) => {
   const cart = req.session.cart || [];
-
   if (!cart.length) return res.redirect('/cart');
 
   try {
-    const db = pool.promise(); // get promise pool
+    const db = pool.promise();
+    const userId = req.session.user.id;
+    
+    // Format dates for MySQL DATETIME
+    const now = new Date();
+    const loanDate = now.toISOString().slice(0, 19).replace('T', ' ');
+    const dueDate = new Date(now.setDate(now.getDate() + 14))
+      .toISOString().slice(0, 19).replace('T', ' ');
 
-    for (let { bookId } of cart) {
-      const [[book]] = await db.query('SELECT quantity FROM books WHERE bookId = ?', [bookId]);
+    console.log('Debug - Checkout process:');
+    console.log('User ID:', userId);
+    console.log('Cart:', cart);
 
+    for (const item of cart) {
+      const [[book]] = await db.query('SELECT quantity FROM books WHERE bookId = ?', [item.bookId]);
+      
       if (!book || book.quantity <= 0) {
-        return res.status(400).send(`Book ID ${bookId} is out of stock.`);
+        console.log('Book out of stock:', item.bookId);
+        return res.status(400).send(`Book ID ${item.bookId} is out of stock.`);
       }
 
-      await db.query('UPDATE books SET quantity = quantity - 1 WHERE bookId = ?', [bookId]);
+      // Create loan record
+      console.log('Creating loan record for book:', item.bookId);
+      await db.query(
+        'INSERT INTO loans (userId, bookId, loan_date, due_date) VALUES (?, ?, ?, ?)',
+        [userId, item.bookId, loanDate, dueDate]
+      );
+
+      // Update book quantity
+      await db.query('UPDATE books SET quantity = quantity - 1 WHERE bookId = ?', [item.bookId]);
     }
 
     req.session.cart = []; // clear cart
@@ -545,6 +564,94 @@ app.get('/deletePublisher/:id', checkAuthenticated, checkAdmin, (req,res) => {
             //Send a success response
             res.redirect('/publishers');
         }
+    });
+});
+
+// Return a book
+app.get('/loans/return/:id', checkAuthenticated, async (req, res) => {
+    const loanId = req.params.id;
+    try {
+        const db = pool.promise();
+        
+        // Get the loan record to check if it exists and hasn't been returned
+        const [[loan]] = await db.query(
+            'SELECT * FROM loans WHERE loanId = ? AND userId = ? AND returnDate IS NULL',
+            [loanId, req.session.user.id]
+        );
+
+        if (!loan) {
+            return res.status(404).send('Loan not found or already returned');
+        }
+
+        // Update the loan record with return date
+        await db.query(
+            'UPDATE loans SET returnDate = NOW() WHERE loanId = ?',
+            [loanId]
+        );
+
+        // Increment the book quantity
+        await db.query(
+            'UPDATE books SET quantity = quantity + 1 WHERE bookId = ?',
+            [loan.bookId]
+        );
+
+        res.redirect('/loans');
+    } catch (error) {
+        console.error('Error returning book:', error);
+        res.status(500).send('Error returning book');
+    }
+});
+
+app.get("/loans", checkAuthenticated, (req, res) => {
+    let sql, params;
+    
+    // Debug log
+    console.log('Current user:', req.session.user);
+    
+    if (req.session.user.role === 'admin') {
+        sql = `
+            SELECT 
+                loans.loanId,
+                loans.dateRequested as loan_date,
+                books.title,
+                books.author,
+                users.username,
+                books.bookId,
+                users.id as userId
+            FROM loans
+            JOIN books ON loans.bookId = books.bookId
+            JOIN users ON loans.userId = users.id
+            ORDER BY loans.dateRequested DESC
+        `;
+        params = [];
+    } else {
+        sql = `
+            SELECT 
+                loans.loanId,
+                loans.dateRequested as loan_date,
+                books.title,
+                books.author,
+                books.bookId
+            FROM loans
+            JOIN books ON loans.bookId = books.bookId
+            WHERE loans.userId = ?
+            ORDER BY loans.dateRequested DESC
+        `;
+        params = [req.session.user.id];
+    }
+
+    // Debug log
+    console.log('SQL Query:', sql);
+    console.log('Parameters:', params);
+
+    pool.query(sql, params, (error, results) => {
+        if (error) {
+            console.error("Error fetching loans:", error);
+            console.error("Detailed error:", error.message);
+            return res.status(500).send('Error fetching loans: ' + error.message);
+        }
+        console.log('Query results:', results);
+        res.render("loansMainPage", { loans: results, user: req.session.user });
     });
 });
 

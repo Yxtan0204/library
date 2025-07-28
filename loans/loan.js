@@ -138,3 +138,6 @@ app.get('/logout', (req, res) => {
 
 const PORT = 3000;
 app.listen(PORT, () => console.log(`Loan Tracker running on port ${PORT}`));
+
+const loanRoutes = require('./routes/loanRoutes');
+app.use('/', loanRoutes);
