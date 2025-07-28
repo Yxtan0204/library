@@ -1,0 +1,165 @@
+**1. views/register.ejs**
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Register</title>
+</head>
+<body>
+  <h1>Register</h1>
+  <% if (messages.length) { %>
+    <p style="color: red;"><%= messages[0] %></p>
+  <% } %>
+  <form method="POST" action="/register">
+    <input type="text" name="username" placeholder="Username" required><br>
+    <input type="email" name="email" placeholder="Email" required><br>
+    <input type="password" name="password" placeholder="Password" required><br>
+    <input type="text" name="address" placeholder="Address" required><br>
+    <input type="text" name="contact" placeholder="Contact" required><br>
+    <select name="role">
+      <option value="user">User</option>
+      <option value="admin">Admin</option>
+    </select><br>
+    <button type="submit">Register</button>
+  </form>
+  <a href="/login">Already have an account? Login</a>
+</body>
+</html>
+```
+
+---
+
+**2. views/login.ejs**
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Login</title>
+</head>
+<body>
+  <h1>Login</h1>
+  <% if (errors.length) { %>
+    <p style="color: red;"><%= errors[0] %></p>
+  <% } %>
+  <% if (messages.length) { %>
+    <p style="color: green;"><%= messages[0] %></p>
+  <% } %>
+  <form method="POST" action="/login">
+    <input type="email" name="email" placeholder="Email" required><br>
+    <input type="password" name="password" placeholder="Password" required><br>
+    <button type="submit">Login</button>
+  </form>
+  <a href="/register">Don't have an account? Register</a>
+</body>
+</html>
+```
+
+---
+
+**3. views/applyLoan.ejs**
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Apply for Loan</title>
+</head>
+<body>
+  <h1>Apply for a Loan</h1>
+  <form method="POST" action="/apply-loan">
+    <input type="number" name="amount" placeholder="Amount" step="0.01" required><br>
+    <input type="number" name="term" placeholder="Term in months" required><br>
+    <textarea name="reason" placeholder="Reason" required></textarea><br>
+    <button type="submit">Apply</button>
+  </form>
+  <a href="/my-loans">Back to My Loans</a>
+</body>
+</html>
+```
+
+---
+
+**4. views/myLoans.ejs**
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <title>My Loans</title>
+</head>
+<body>
+  <h1>My Loan Applications</h1>
+  <table border="1">
+    <tr>
+      <th>Amount</th>
+      <th>Term (months)</th>
+      <th>Status</th>
+      <th>Reason</th>
+      <th>Requested At</th>
+    </tr>
+    <% loans.forEach(loan => { %>
+      <tr>
+        <td><%= loan.amount %></td>
+        <td><%= loan.term %></td>
+        <td><%= loan.status %></td>
+        <td><%= loan.reason %></td>
+        <td><%= loan.dateRequested.toLocaleString() %></td>
+      </tr>
+    <% }) %>
+  </table>
+  <a href="/apply-loan">Apply for a New Loan</a>
+  <br><a href="/logout">Logout</a>
+</body>
+</html>
+```
+
+---
+
+**5. views/adminLoans.ejs**
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin - Loan Applications</title>
+</head>
+<body>
+  <h1>All Loan Applications</h1>
+  <table border="1">
+    <tr>
+      <th>User</th>
+      <th>Amount</th>
+      <th>Term</th>
+      <th>Status</th>
+      <th>Reason</th>
+      <th>Requested At</th>
+      <th>Action</th>
+    </tr>
+    <% loans.forEach(loan => { %>
+      <tr>
+        <td><%= loan.username %></td>
+        <td><%= loan.amount %></td>
+        <td><%= loan.term %></td>
+        <td><%= loan.status %></td>
+        <td><%= loan.reason %></td>
+        <td><%= loan.dateRequested.toLocaleString() %></td>
+        <td>
+          <% if (loan.status === 'pending') { %>
+            <form method="POST" action="/loan/<%= loan.loanId %>/approve" style="display:inline;">
+              <button type="submit">Approve</button>
+            </form>
+            <form method="POST" action="/loan/<%= loan.loanId %>/reject" style="display:inline;">
+              <button type="submit">Reject</button>
+            </form>
+          <% } else { %>
+            <em><%= loan.status %></em>
+          <% } %>
+        </td>
+      </tr>
+    <% }) %>
+  </table>
+  <a href="/logout">Logout</a>
+</body>
+</html>
