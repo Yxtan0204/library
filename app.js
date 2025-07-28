@@ -156,9 +156,6 @@ app.post('/login', (req, res) => {
         };
     });
 });
-app.get('/profile', checkAuthenticated, (req, res) => {
-  res.render('profile', { user: req.session.user });
-});
 
 // logout route
 app.get('/logout', (req, res) => {
@@ -177,6 +174,15 @@ app.get('/forgot-password', (req, res) => {
 app.post('/forgot-password', (req, res) => {
   const email = req.body.email;
   res.render('forgot-success', { email });
+});
+
+//profile page
+app.get('/profile', checkAuthenticated, (req, res) => {
+  res.render('profile', { user: req.session.user });
+});
+//Update Profile
+app.get('/updateProfile', checkAuthenticated, (req, res) => {
+  res.render('profile', { user: req.session.user });
 });
 
 // ROUTES FOR BOOKS TABLE
