@@ -298,7 +298,7 @@ app.get('/updateUser/:id', checkAuthenticated, checkAdmin, (req, res) => {
     }
 
     if (results.length > 0) {
-      res.render('editUser', { user: results[0] });
+      res.render('updateUser', { user: results[0] });
     } else {
       res.status(404).send('User not found');
     }
